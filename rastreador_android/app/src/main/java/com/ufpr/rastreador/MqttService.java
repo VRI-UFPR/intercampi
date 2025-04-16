@@ -107,7 +107,7 @@ public class MqttService {
             // Conecta ao servidor MQTT
             client = new MqttClient(connectionUri, "onibus1", null);
             MqttConnectOptions options = new MqttConnectOptions();
-            options.setKeepAliveInterval(60);
+            options.setKeepAliveInterval(180);
             options.setConnectionTimeout(30);
             client.connect(options);
 
@@ -131,7 +131,7 @@ public class MqttService {
                     isConnected = false;
                     Log.e("MQTT", "Conexão perdida. Tentando reconectar...");
                     handler.post(() -> main_activity.updateStatusText( "reconectando" ));
-                    // scheduleReconnect();
+                    scheduleReconnect();
                 }
 
                 @Override
@@ -204,6 +204,28 @@ public class MqttService {
             handler.post(() -> main_activity.updateLastSentText( horaAtual ));
         } catch (MqttException e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Reconecta o cliente MQTT
+     */
+    private void scheduleReconnect() {
+        if (!isConnected) {
+            handler.postDelayed(() -> {
+                Log.d("MQTT", "Tentando reconectar... Delay: " + reconnectDelay + "ms");
+                try {
+                    if (client != null && !client.isConnected()) {
+                        client.reconnect();
+                        handler.post(() -> main_activity.updateStatusText( HOST_PORT ));
+                    }
+                } catch (MqttException e) {
+                    Log.e("MQTT", "Falha na reconexão: " + e.getMessage());
+                    // Aumenta o delay exponencialmente (com limite máximo)
+                    reconnectDelay = Math.min(reconnectDelay * 2, maxReconnectDelay);
+                    scheduleReconnect();
+                }
+            }, reconnectDelay);
         }
     }
 
