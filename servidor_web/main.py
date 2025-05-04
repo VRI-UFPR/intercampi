@@ -20,8 +20,31 @@
 # =============================================================================
 
 from flask import Flask
+import threading
+import time
+import ufr
+import json
 
 g_app = Flask(__name__)
+g_data = {}
+
+# =============================================================================
+#  Collector thread
+# =============================================================================
+
+def main_coletor():
+    global g_data
+    sub = ufr.Subscriber("@new mqtt  @coder text  @host 185.159.82.136 @topic intercampi")
+    while True:
+        mensagem_json = sub.get("^s")
+        # print(mensagem_json)
+        mensagem = json.loads(mensagem_json)
+        rota = mensagem['rota']
+        veiculo = mensagem['veiculo']
+        latitude = mensagem['lat']
+        longitude = mensagem['log']
+        g_data[rota] = [latitude,longitude]
+        print("Coletor:", rota, g_data[rota])
 
 # =============================================================================
 #  Rotas HTML
@@ -33,7 +56,7 @@ def index():
         Retorna a lista de todos os intercampi e suas ultimas posições GPS
         recebidas pelo servidor.
     '''
-    return 'Hello, World!'
+    return json.dumps(g_data)
 
 @g_app.route('/', methods=["PUT"])
 def put_location():
@@ -42,4 +65,8 @@ def put_location():
     '''
     return 'Hello, World!'
 
+# Criando a thread
+# thread_coletor = threading.Thread(target=main_coletor, args=(,))
+thread_coletor = threading.Thread(target=main_coletor)
+thread_coletor.start()
 g_app.run()
