@@ -27,5 +27,10 @@ pip3 install ufr
 ## Execucao
 
 ```
-python3 main.py
+python3 main.py [nome_da_rota] [nome_do_onibus]
 ```
+
+## Como gerar um novo arquivo de Rota
+
+Pode-se usar o site https://openrouteservice.org/services/ , para definir a rota e ele monta um vetor com as coordenadas da rota
+

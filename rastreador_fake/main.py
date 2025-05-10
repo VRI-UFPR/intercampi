@@ -1,4 +1,4 @@
-# This file is part of the Intercampi Project (https://github.com/)
+# This file is part of the Intercampi (https://github.com/VRI-UFPR/intercampi)
 # Copyright (c) 2025 VRI
 #  - Felipe Gustavo Bombardelli
 # 
@@ -21,20 +21,38 @@
 import ufr
 import json
 import time
+import sys
 
 # =============================================================================
 #  Main
 # =============================================================================
 
+# 0. Le os parametros de entrada (Nome da Rota e do Onibus)
+try:
+    nome_rota = sys.argv[1]
+except:
+    nome_rota = "intercampi_falso"
+
+try:
+    nome_onibus = sys.argv[2]
+except:
+    nome_onibus = "onibus_falso"
+
+# 1. Le os dados da rota a partir de um JSON
+fd = open('rota1.json')
+rota = json.loads(fd.read())
+fd.close()
+
+# 2. Abre o publicador MQTT 
 pub = ufr.Publisher("@new mqtt @coder text @host 185.159.82.136 @topic intercampi")
-log = 23.000
-while True:
-    mensagem = {'rota': 'intercampi_falso', 'veiculo': 'onibus_falso', 'lat': 12.333, 'log': log}
+
+# 3. Publica todas as coordenadas, uma a cada 5 segundos
+for coordinate in rota['coordinates']:
+    mensagem = {'rota': nome_rota, 'veiculo': nome_onibus, 'lat': coordinate[1], 'log': coordinate[0]}
     texto_json = json.dumps(mensagem)
     print(texto_json)
     pub.put("s\n", texto_json)
     time.sleep(5)
 
-    log += 0.0001
-
-
+# 4. Fecha o publicador
+pub.close()

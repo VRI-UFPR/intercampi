@@ -1,7 +1,6 @@
-# VRI
-# This file is part of the XXX distribution (https://github.com/xxxx 
-# or http://xxx.github.io)
-# Copyright (c) 2025 Felipe Gustavo Bombardelli
+# This file is part of the Intercampi (https://github.com/VRI-UFPR/intercampi)
+# Copyright (c) 2025 VRI
+#  - Felipe Gustavo Bombardelli
 # 
 # This program is free software: you can redistribute it and/or modify  
 # it under the terms of the GNU General Public License as published by  
@@ -24,12 +23,13 @@ import threading
 import time
 import ufr
 import json
+import jinja2
 
 g_app = Flask(__name__)
 g_data = {}
 
 # =============================================================================
-#  Collector thread
+#  Collector Thread
 # =============================================================================
 
 def main_coletor():
@@ -50,7 +50,7 @@ def main_coletor():
 #  Rotas HTML
 # =============================================================================
 
-@g_app.route('/')
+@g_app.route('/api')
 def index():
     '''
         Retorna a lista de todos os intercampi e suas ultimas posições GPS
@@ -58,15 +58,38 @@ def index():
     '''
     return json.dumps(g_data)
 
-@g_app.route('/', methods=["PUT"])
+@g_app.route('/api', methods=["PUT"])
 def put_location():
     '''
         Adiciona posicao de um onibus para a base de dados
     '''
     return 'Hello, World!'
 
-# Criando a thread
-# thread_coletor = threading.Thread(target=main_coletor, args=(,))
+@g_app.route('/', methods=["GET"])
+def get_map():
+    '''
+        Mostra a posicao dos Onibus em um Mapa OpenStreet
+    '''
+    global g_env
+
+    # construi o vetor para o template
+    rotas = []
+    for rota, coordenadas in g_data.items():        
+        rotas.append({'nome': rota, 'coordenadas': coordenadas})
+
+    # renderiza o template mapa com os dados
+    template = g_env.get_template('map.html')
+    return template.render({'rotas': rotas})
+
+# =============================================================================
+#  Main
+# =============================================================================
+
+g_env = jinja2.Environment(
+    loader=jinja2.FileSystemLoader('templates'),  # Procura templates na pasta 'templates'
+    autoescape=True  # Ativa escape automático para segurança
+)
+
 thread_coletor = threading.Thread(target=main_coletor)
 thread_coletor.start()
 g_app.run()

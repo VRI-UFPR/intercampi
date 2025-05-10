@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intercampi UFPR</title>
+    
+    <!-- Inclui a biblioteca Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    
+    <!-- Estilos personalizados -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+        
+        h1 {
+            text-align: center;
+            margin: 10px 0;
+            color: #333;
+        }
+        
+        .info {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 5px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            max-width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Intercampi UFPR</h1>
+    <div class="info">Clique nos marcadores para mais informações</div>
+    <div id="map"></div>
+    
+    <!-- Inclui a biblioteca Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    
+    <script>
+        // Inicializa o mapa
+        const map = L.map('map').setView([-25.425997,-49.261769], 13); // Coordenadas iniciais (Brasília)
+        
+        // Adiciona a camada do OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Array com os 3 pontos (coordenadas e informações)
+        const pontos = [
+            {% for rota in rotas %}
+            {
+                nome: "{{rota.nome}}",
+                coordenadas: {{rota.coordenadas}},
+                descricao: "Teste"
+            },
+            {% endfor %}
+
+        ];
+        
+        // Cores diferentes para cada marcador
+        const cores = ['red', 'blue', 'green'];
+        
+        // Adiciona os marcadores ao mapa
+        pontos.forEach((ponto, index) => {
+            const marcador = L.marker(ponto.coordenadas, {
+                title: ponto.nome,
+                alt: ponto.nome,
+                riseOnHover: true
+            }).addTo(map);
+            
+            // Adiciona um popup com informações
+            marcador.bindPopup(`
+                <h3>${ponto.nome}</h3>
+                <p>${ponto.descricao}</p>
+                <small>Latitude: ${ponto.coordenadas[0].toFixed(4)}</small><br>
+                <small>Longitude: ${ponto.coordenadas[1].toFixed(4)}</small>
+            `);
+            
+            // Adiciona um círculo colorido em volta do marcador
+            L.circle(ponto.coordenadas, {
+                color: cores[index],
+                fillColor: cores[index],
+                fillOpacity: 0.2,
+                radius: 30
+            }).addTo(map);
+        });
+        
+        // Ajusta o zoom para mostrar todos os pontos
+        const grupoPontos = L.featureGroup(pontos.map(p => L.marker(p.coordenadas)));
+        map.fitBounds(grupoPontos.getBounds().pad(0.5));
+    </script>
+</body>
+</html>

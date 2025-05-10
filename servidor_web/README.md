@@ -22,9 +22,9 @@ sudo make install
 pip3 install ufr
 ```
 
-4. Instalar o Flask
+4. Instalar o Flask e o Jinja2
 ```
-pip3 install flask
+pip3 install flask jinja2
 ```
 
 
