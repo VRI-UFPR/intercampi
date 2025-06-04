@@ -32,6 +32,7 @@ import android.Manifest;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -42,6 +43,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.os.Handler;
 import android.os.Looper;
+
 
 // =================================================================================================
 //  Main
@@ -64,6 +66,8 @@ public class MainActivity extends AppCompatActivity {
 
     // log
     private final String TAG = "Main";
+
+    private SharedPreferences sharedPref;
 
     // =============================================================================================
     //  Callbacks
@@ -91,18 +95,36 @@ public class MainActivity extends AppCompatActivity {
         startButton.setEnabled(false);
         stopButton = (Button) findViewById(R.id.stopButton);
 
+        // Get values from preference
+        sharedPref = getApplicationContext().getSharedPreferences("rastreador", MODE_PRIVATE);
+        String onibus_salvo = sharedPref.getString("onibus", "onibus0");
+        onibusText.setText(onibus_salvo);
+        String rota_salva = sharedPref.getString("rota", "rota0");
+        rotaText.setText(rota_salva);
+
+        // Pede ao usuario permitir a localização
         checkLocationPermissions();
 
         // Actions when start button is clicked
         startButton.setOnClickListener(v -> {
             if ( gps != null ) {
-                gps.startTracking(
-                        onibusText.getText().toString(),
-                        rotaText.getText().toString(),
-                        this);
+                // Pega o nome do veiculo e da rota dos campos
+                String onibus = onibusText.getText().toString();
+                String rota = rotaText.getText().toString();
+
+                // Salva os nomes nas configurações
+                SharedPreferences.Editor prefEditor = sharedPref.edit();
+                prefEditor.putString("onibus", onibus);
+                prefEditor.putString("rota", rota);
+                prefEditor.commit();
+
+                // Inicializa o rastreio do GPS
+                gps.startTracking(onibus, rota, this);
                 startButton.setEnabled(false);
                 stopButton.setEnabled(true);
                 statusText.setText("conectando");
+                onibusText.setEnabled(false);
+                rotaText.setEnabled(false);
             } else {
                 Toast.makeText(this, "Erro no serviço de GPS", Toast.LENGTH_LONG).show();
                 Log.e(TAG, "GPS está nulo, ocorreu um erro ao criar o serviço de GPS");
@@ -116,6 +138,8 @@ public class MainActivity extends AppCompatActivity {
                 startButton.setEnabled(true);
                 stopButton.setEnabled(false);
                 statusText.setText("desligado");
+                onibusText.setEnabled(true);
+                rotaText.setEnabled(true);
             } else {
                 Toast.makeText(this, "Erro no serviço de GPS", Toast.LENGTH_LONG).show();
                 Log.e(TAG, "GPS está nulo, ocorreu um erro ao criar o serviço de GPS");
@@ -263,3 +287,5 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 }
+
+
