@@ -52,57 +52,82 @@
             crossorigin=""></script>
     
     <script>
+        // Função para carregar os pontos via AJAX
+        async function carregar_pontos() {
+            try {
+                const response = await fetch('/api/rotas'); // Substitua '/api/rotas' pela URL do seu endpoint
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const pontos = await response.json();
+
+                // Limpa todos os pontos do mapa
+                g_grupoDePontos.clearLayers();
+
+                // Agora você tem os pontos no array 'pontos'
+                console.log("Pontos carregados via AJAX:", pontos);
+
+                // Exemplo: Adicionar marcadores no mapa com base nos pontos carregados
+                // pontos.forEach(ponto => {
+                //    L.marker(ponto.coordenadas)
+                //        .addTo(map)
+                //        .bindPopup(`<b>${ponto.nome}</b><br>${ponto.descricao}`);
+                // });
+
+                // Cores diferentes para cada marcador
+                const cores = ['red', 'blue', 'green'];
+
+                // Adiciona os marcadores ao mapa
+                pontos.forEach((ponto, index) => {
+                    const marcador = L.marker(ponto.coordenadas, {
+                        title: ponto.nome,
+                        alt: ponto.nome,
+                        riseOnHover: false
+                    }).addTo(map);
+                    
+                    // Adiciona um popup com informações
+                    marcador.bindPopup(`
+                        <h3>${ponto.nome}</h3>
+                        <p>${ponto.descricao}</p>
+                        <small>Latitude: ${ponto.coordenadas[0].toFixed(4)}</small><br>
+                        <small>Longitude: ${ponto.coordenadas[1].toFixed(4)}</small>
+                    `);
+                    
+                    g_grupoDePontos.addLayer(marcador);
+
+                    // Adiciona um círculo colorido em volta do marcador
+                    /*L.circle(ponto.coordenadas, {
+                        color: cores[index],
+                        fillColor: cores[index],
+                        fillOpacity: 0.2,
+                        radius: 30
+                    }).addTo(map);*/
+                });
+
+            } catch (error) {
+                console.error("Erro ao carregar os pontos:", error);
+            }
+        }
+
+
+
+
+
+
         // Inicializa o mapa
-        const map = L.map('map').setView([-25.425997,-49.261769], 13); // Coordenadas iniciais (Brasília)
-        
+        const map = L.map('map').setView([-25.425997,-49.261769], 14); // Coordenadas iniciais (Curitiba)
         // Adiciona a camada do OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
-        
-        // Array com os 3 pontos (coordenadas e informações)
-        const pontos = [
-            {% for rota in rotas %}
-            {
-                nome: "{{rota.nome}}",
-                coordenadas: {{rota.coordenadas}},
-                descricao: "Teste"
-            },
-            {% endfor %}
 
-        ];
-        
-        // Cores diferentes para cada marcador
-        const cores = ['red', 'blue', 'green'];
-        
-        // Adiciona os marcadores ao mapa
-        pontos.forEach((ponto, index) => {
-            const marcador = L.marker(ponto.coordenadas, {
-                title: ponto.nome,
-                alt: ponto.nome,
-                riseOnHover: true
-            }).addTo(map);
-            
-            // Adiciona um popup com informações
-            marcador.bindPopup(`
-                <h3>${ponto.nome}</h3>
-                <p>${ponto.descricao}</p>
-                <small>Latitude: ${ponto.coordenadas[0].toFixed(4)}</small><br>
-                <small>Longitude: ${ponto.coordenadas[1].toFixed(4)}</small>
-            `);
-            
-            // Adiciona um círculo colorido em volta do marcador
-            L.circle(ponto.coordenadas, {
-                color: cores[index],
-                fillColor: cores[index],
-                fillOpacity: 0.2,
-                radius: 30
-            }).addTo(map);
-        });
-        
+        const g_grupoDePontos = L.featureGroup().addTo(map);
+        carregar_pontos()
+        setInterval(carregar_pontos, 2000);   // 2000ms
+
         // Ajusta o zoom para mostrar todos os pontos
-        const grupoPontos = L.featureGroup(pontos.map(p => L.marker(p.coordenadas)));
-        map.fitBounds(grupoPontos.getBounds().pad(0.5));
+        // const grupoPontos = L.featureGroup(pontos.map(p => L.marker(p.coordenadas)));
+        // map.fitBounds(grupoPontos.getBounds().pad(0.5));
     </script>
 </body>
 </html>
