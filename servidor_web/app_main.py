@@ -43,7 +43,7 @@ def main_coletor():
         veiculo = mensagem['veiculo']
         latitude = mensagem['lat']
         longitude = mensagem['log']
-        g_data[rota] = [latitude,longitude]
+        g_data[rota] = {'coordenadas': [latitude,longitude], 'timestamp': time.now()}
         print("Coletor:", rota, g_data[rota])
 
 # =============================================================================
@@ -51,19 +51,23 @@ def main_coletor():
 # =============================================================================
 
 @g_app.route('/api')
-def index():
+def get_api():
     '''
         Retorna a lista de todos os intercampi e suas ultimas posições GPS
-        recebidas pelo servidor.
+        recebidas pelo servidor em um dicionario
     '''
     return json.dumps(g_data)
 
-@g_app.route('/api', methods=["PUT"])
-def put_location():
+@g_app.route('/api/rotas')
+def get_api_rotas():
     '''
-        Adiciona posicao de um onibus para a base de dados
+        Retorna a lista de todos os intercampi e suas ultimas posições GPS
+        recebidas pelo servidor em um vetor
     '''
-    return 'Hello, World!'
+    rotas = []
+    for nome, item in g_data.items():
+        rotas.append({'nome': nome, "coordenadas": item['coordenadas'], "descricao": item['timestamp']})
+    return json.dumps(rotas)
 
 @g_app.route('/', methods=["GET"])
 def get_map():
@@ -71,11 +75,6 @@ def get_map():
         Mostra a posicao dos Onibus em um Mapa OpenStreet
     '''
     global g_env
-
-    # construi o vetor para o template
-    rotas = []
-    for rota, coordenadas in g_data.items():        
-        rotas.append({'nome': rota, 'coordenadas': coordenadas})
 
     # renderiza o template mapa com os dados
     template = g_env.get_template('map.html')
@@ -89,7 +88,8 @@ g_env = jinja2.Environment(
     loader=jinja2.FileSystemLoader('templates'),  # Procura templates na pasta 'templates'
     autoescape=True  # Ativa escape automático para segurança
 )
+g_thread_coletor = threading.Thread(target=main_coletor)
+g_thread_coletor.start()
 
-thread_coletor = threading.Thread(target=main_coletor)
-thread_coletor.start()
-g_app.run()
+if __name__ == '__main__':
+    g_app.run(debug=True)

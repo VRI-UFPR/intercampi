@@ -28,7 +28,8 @@ package com.ufpr.rastreador;
 // =================================================================================================
 
 public class Coordinates {
-    public String id;
+    public String rota;
+    public String veiculo;
     public double lat;
     public double log;
 
@@ -38,8 +39,9 @@ public class Coordinates {
      * @param latitude
      * @param longitude
      */
-    public Coordinates(String id, double latitude, double longitude) {
-        this.id = id;
+    public Coordinates(String rota, String onibus, double latitude, double longitude) {
+        this.rota = rota;
+        this.veiculo = onibus;
         this.lat = latitude;
         this.log = longitude;
     }

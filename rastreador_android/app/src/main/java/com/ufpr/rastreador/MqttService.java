@@ -56,7 +56,7 @@ public class MqttService {
     private final String HOST_PORT = "185.159.82.136:1883";
 
     // Nome do topico para o envio da localização do veiculo
-    private final String TOPIC = "location";
+    private final String TOPIC = "intercampi";
 
     // Nome do topico que recebe os comandos do servidor terminal
     private final String TOPIC_CMD_REQ = "command_req";
@@ -193,7 +193,7 @@ public class MqttService {
      */
     public void pub_location(double lat, double log) {
         try {
-            Coordinates coordinates = new Coordinates(this.onibus_id, lat, log);
+            Coordinates coordinates = new Coordinates(this.rota_id, this.onibus_id, lat, log);
             String json = gson.toJson(coordinates);
             Log.i("JSON",json);
             MqttMessage message = new MqttMessage(json.getBytes(StandardCharsets.UTF_8));
