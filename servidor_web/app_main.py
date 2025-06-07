@@ -51,7 +51,7 @@ def main_coletor():
 # =============================================================================
 
 @g_app.route('/api/rotas')
-def get_index():
+def get_api_rotas():
     '''
         Retorna a lista de todos os intercampi e suas ultimas posições GPS
         recebidas pelo servidor.
