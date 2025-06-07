@@ -58,7 +58,7 @@ def get_api_rotas():
     '''
     resultado = []
     for nome,item in g_data.items():
-        resultado.append({'nome': nome, 'coordenadas': items})
+        resultado.append({'nome': nome, 'coordenadas': item, 'timestamp': 0})
     return json.dumps(resultado)
 
 
