@@ -28,6 +28,11 @@ import jinja2
 g_app = Flask(__name__)
 g_data = {}
 
+g_env = jinja2.Environment(
+    loader=jinja2.FileSystemLoader('/home/vps/intercampi/servidor_web/templates'),
+    autoescape=True  # Ativa escape automático para segurança
+)
+
 # =============================================================================
 #  Collector Thread
 # =============================================================================
@@ -81,11 +86,6 @@ def get_index():
 # =============================================================================
 #  Main
 # =============================================================================
-
-g_env = jinja2.Environment(
-    loader=jinja2.FileSystemLoader('templates'),  # Procura templates na pasta 'templates'
-    autoescape=True  # Ativa escape automático para segurança
-)
 
 thread_coletor = threading.Thread(target=main_coletor)
 thread_coletor.start()
