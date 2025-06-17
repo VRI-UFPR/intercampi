@@ -38,6 +38,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.os.Handler;
@@ -84,14 +85,18 @@ public class MainActivity extends AppCompatActivity {
 
         //Get view objects
         statusText = (TextView) findViewById(R.id.statusText);
-        onibusText = (TextView) findViewById(R.id.onibusText);
-        rotaText = (TextView) findViewById(R.id.rotaText);
+        onibusText = (EditText) findViewById(R.id.onibusText);
+        rotaText = (EditText) findViewById(R.id.rotaText);
         lastSentText = (TextView) findViewById(R.id.lastSentText);
         startButton = (Button) findViewById(R.id.startButton);
-        startButton.setEnabled(false);
         stopButton = (Button) findViewById(R.id.stopButton);
 
         checkLocationPermissions();
+
+        // start automatically
+        startButton.setEnabled(false);
+        rotaText.setEnabled(false);
+        onibusText.setEnabled(false);
 
         // Actions when start button is clicked
         startButton.setOnClickListener(v -> {
@@ -103,6 +108,8 @@ public class MainActivity extends AppCompatActivity {
                 startButton.setEnabled(false);
                 stopButton.setEnabled(true);
                 statusText.setText("conectando");
+                rotaText.setEnabled(false);
+                onibusText.setEnabled(false);
             } else {
                 Toast.makeText(this, "Erro no serviço de GPS", Toast.LENGTH_LONG).show();
                 Log.e(TAG, "GPS está nulo, ocorreu um erro ao criar o serviço de GPS");
@@ -116,6 +123,8 @@ public class MainActivity extends AppCompatActivity {
                 startButton.setEnabled(true);
                 stopButton.setEnabled(false);
                 statusText.setText("desligado");
+                rotaText.setEnabled(true);
+                onibusText.setEnabled(true);
             } else {
                 Toast.makeText(this, "Erro no serviço de GPS", Toast.LENGTH_LONG).show();
                 Log.e(TAG, "GPS está nulo, ocorreu um erro ao criar o serviço de GPS");
