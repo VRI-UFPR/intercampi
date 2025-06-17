@@ -54,14 +54,6 @@ def main_coletor():
 #  Rotas HTML
 # =============================================================================
 
-@g_app.route('/api')
-def get_api():
-    '''
-        Retorna a lista de todos os intercampi e suas ultimas posições GPS
-        recebidas pelo servidor em um dicionario
-    '''
-    return json.dumps(g_data)
-
 @g_app.route('/api/rotas')
 def get_api_rotas():
     '''
@@ -79,17 +71,18 @@ def get_map():
         Mostra a posicao dos Onibus em um Mapa OpenStreet
     '''
     global g_env
-
     # renderiza o template mapa com os dados
     template = g_env.get_template('map.html')
     return template.render()
+
 
 # =============================================================================
 #  Main
 # =============================================================================
 
+template_path = './templates'
 g_env = jinja2.Environment(
-    loader=jinja2.FileSystemLoader('templates'),  # Procura templates na pasta 'templates'
+    loader=jinja2.FileSystemLoader(template_path),
     autoescape=True  # Ativa escape automático para segurança
 )
 g_thread_coletor = threading.Thread(target=main_coletor)
