@@ -123,6 +123,8 @@ public class MainActivity extends AppCompatActivity {
                 startButton.setEnabled(false);
                 stopButton.setEnabled(true);
                 statusText.setText("conectando");
+                onibusText.setEnabled(false);
+                rotaText.setEnabled(false);
             } else {
                 Toast.makeText(this, "Erro no serviço de GPS", Toast.LENGTH_LONG).show();
                 Log.e(TAG, "GPS está nulo, ocorreu um erro ao criar o serviço de GPS");
@@ -136,6 +138,8 @@ public class MainActivity extends AppCompatActivity {
                 startButton.setEnabled(true);
                 stopButton.setEnabled(false);
                 statusText.setText("desligado");
+                onibusText.setEnabled(true);
+                rotaText.setEnabled(true);
             } else {
                 Toast.makeText(this, "Erro no serviço de GPS", Toast.LENGTH_LONG).show();
                 Log.e(TAG, "GPS está nulo, ocorreu um erro ao criar o serviço de GPS");

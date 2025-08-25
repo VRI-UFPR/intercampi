@@ -25,10 +25,11 @@
                 android:textSize="24sp"
                 android:textStyle="bold" />
 
-            <TextView
+            <EditText
                 android:id="@+id/onibusText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:enabled="false"
                 android:text="onibus1"
                 android:textSize="24sp"
                 android:textStyle="italic" />
@@ -46,10 +47,11 @@
                 android:textSize="24sp"
                 android:textStyle="bold" />
 
-            <TextView
+            <EditText
                 android:id="@+id/rotaText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:enabled="false"
                 android:text="intercampi1"
                 android:textSize="24sp"
                 android:textStyle="bold" />
