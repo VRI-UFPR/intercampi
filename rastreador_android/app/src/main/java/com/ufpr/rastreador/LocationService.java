@@ -42,8 +42,8 @@ import android.util.Log;
 
 public class LocationService extends Service {
     // Constantes configuraveis
-    private final int LOCATION_INTERVAL_MS = 1000;  // 1000ms atualizacao do GPS
-    private final int LOCATION_DISTANCE = 5;    // 20m de mudanca
+    private final int LOCATION_INTERVAL_MS = 5000;  // 5000ms atualizacao do GPS
+    private final int LOCATION_DISTANCE = 20;    // 20m de mudanca
 
     // Objetos Dependentes
     private MqttService mqtt = null;

@@ -36,23 +36,27 @@ def main_coletor():
     global g_data
     sub = ufr.Subscriber("@new mqtt  @coder text  @host 185.159.82.136 @topic intercampi")
     while True:
-        try:
-            mensagem_json = sub.get("^s")
-            # print(mensagem_json)
-            mensagem = json.loads(mensagem_json)
-            rota = mensagem['rota']
-            veiculo = mensagem['veiculo']
-            latitude = mensagem['lat']
-            longitude = mensagem['log']
-            g_data[rota] = {'coordenadas': [latitude,longitude], 'timestamp': time.timeaa()}
-            print("Coletor:", rota, g_data[rota])
-        except:
-            print("Error")
-            exit(0)
+        mensagem_json = sub.get("^s")
+        # print(mensagem_json)
+        mensagem = json.loads(mensagem_json)
+        rota = mensagem['rota']
+        veiculo = mensagem['veiculo']
+        latitude = mensagem['lat']
+        longitude = mensagem['log']
+        g_data[rota] = {'coordenadas': [latitude,longitude], 'timestamp': time.now()}
+        print("Coletor:", rota, g_data[rota])
 
 # =============================================================================
 #  Rotas HTML
 # =============================================================================
+
+@g_app.route('/api')
+def get_api():
+    '''
+        Retorna a lista de todos os intercampi e suas ultimas posições GPS
+        recebidas pelo servidor em um dicionario
+    '''
+    return json.dumps(g_data)
 
 @g_app.route('/api/rotas')
 def get_api_rotas():
@@ -71,18 +75,17 @@ def get_map():
         Mostra a posicao dos Onibus em um Mapa OpenStreet
     '''
     global g_env
+
     # renderiza o template mapa com os dados
     template = g_env.get_template('map.html')
-    return template.render()
-
+    return template.render({'rotas': rotas})
 
 # =============================================================================
 #  Main
 # =============================================================================
 
-template_path = './templates'
 g_env = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(template_path),
+    loader=jinja2.FileSystemLoader('templates'),  # Procura templates na pasta 'templates'
     autoescape=True  # Ativa escape automático para segurança
 )
 g_thread_coletor = threading.Thread(target=main_coletor)
