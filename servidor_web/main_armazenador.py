@@ -64,6 +64,6 @@ while True:
     longitude = mensagem['log']
     print(mensagem)
 
-    # cursor.execute('''INSERT INTO coordenadas (rota, veiculo, latitude, longitude) VALUES (?, ?, ?, ?)''', 
-    #    (rota, veiculo, latitude, longitude))
-    # conn.commit()
+    cursor.execute('''INSERT INTO coordenadas (rota, veiculo, latitude, longitude) VALUES (?, ?, ?, ?)''', 
+        (rota, veiculo, latitude, longitude))
+    conn.commit()
