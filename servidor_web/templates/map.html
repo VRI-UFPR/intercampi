@@ -55,7 +55,7 @@
         // Função para carregar os pontos via AJAX
         async function carregar_pontos() {
             try {
-                const response = await fetch('/api/rotas'); // Substitua '/api/rotas' pela URL do seu endpoint
+                const response = await fetch('/api/onibus');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }

@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # Serviço da nossa aplicação Flask
+  web:
+    build: .  # Constrói a imagem a partir do Dockerfile no diretório atual
+    container_name: intercampi_web
+    image: intercampi_web
+
+    # ports:
+    #  - "5000:5000"  # Mapeia a porta 5000 do host para a 5000 do contêiner
+    # volumes:
+    #  - .:/app  # Monta o diretório atual no contêiner para live-reloading
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy # Espera o serviço 'db' estar saudável para iniciar
+
+  # Serviço do banco de dados PostgreSQL
+  db:
+    image: postgres:14-alpine  # Usa uma imagem oficial do PostgreSQL
+    container_name: intercampi_db
+    env_file:
+      - .env # Carrega as mesmas variáveis para inicializar o banco de dados
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/ # Volume para persistir os dados
+    # ports:
+    #  - "5432:5432" # Expõe a porta do Postgres para o host (opcional, bom para debug)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# Define o volume nomeado para persistência dos dados
+volumes:
+  postgres_data:

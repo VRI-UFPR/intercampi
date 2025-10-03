@@ -1,10 +1,22 @@
 
 
 // Parametros Configuraveis
-altura=60;
+altura=120;
 espessura=1.5;
 altura_suporte=50;
 
+
+difference() {
+    cube([37,30,3]);
+    translate([10,10,0]) cube([10,10,3]);
+}
+
+
+
+
+
+
+/*
 module caixa() {
     // Base
     cube([37,30,1.5]);
@@ -24,6 +36,7 @@ module caixa() {
     translate([0,30,0]) cube([37,espessura,altura]);
 }
 
+
 difference() {
     caixa();
     // abertura do USB
@@ -33,5 +46,8 @@ difference() {
 }
 
 
+
 // Mostra o modelo 3D da placa
 translate([-10,-83,51]) rotate([0,90,0]) import("TTGO_SIM7000GV1.stl");
+
+*/

@@ -18,13 +18,10 @@
 #  Header
 # =============================================================================
 
-import requests
+import ufr
 import json
 import time
 import sys
-
-HOST = "172.19.0.3"
-HOST_URL = f"http://{HOST}:5000/api"
 
 # =============================================================================
 #  Main
@@ -46,25 +43,16 @@ fd = open('rota1.json')
 rota = json.loads(fd.read())
 fd.close()
 
-# 2. Publica todas as coordenadas, uma a cada 5 segundos
+# 2. Abre o publicador MQTT 
+pub = ufr.Publisher("@new mqtt @coder text @host 185.159.82.136 @topic intercampi")
+
+# 3. Publica todas as coordenadas, uma a cada 5 segundos
 for coordinate in rota['coordinates']:
-    # 2.1. monta a mensagem
-    mensagem = {
-        'rota': nome_rota, 
-        'veiculo': nome_onibus, 
-        'lat': coordinate[1], 'log': coordinate[0]
-    }
-
-    # 2.2. envia a mensagem
-    response_json = requests.post(HOST_URL, json=mensagem)
-    if response_json.status_code == 200:
-        message = response_json.json()
-        if message['status'] == 'ok':
-            print(mensagem)
-        else:
-            print(message)
-    else:
-        print(f"Error: {response_json.status_code} - {response_json.text}")
-
-    # 2.3. espera 5 segundos    
+    mensagem = {'rota': nome_rota, 'veiculo': nome_onibus, 'lat': coordinate[1], 'log': coordinate[0]}
+    texto_json = json.dumps(mensagem)
+    print(texto_json)
+    pub.put("s\n", texto_json)
     time.sleep(5)
+
+# 4. Fecha o publicador
+pub.close()

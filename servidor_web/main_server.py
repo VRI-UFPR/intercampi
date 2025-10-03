@@ -18,14 +18,23 @@
 #  Header
 # =============================================================================
 
-from flask import Flask
+import os
 import threading
 import time
-import ufr
 import json
 import jinja2
 import sqlite3
+import psycopg2
 
+from flask import Flask, request
+from datetime import datetime
+
+DB_TYPE = 'pg'  # pg: postgres, other: sqlite3
+POSTGRES_HOST = os.environ.get("POSTGRES_HOST")
+POSTGRES_DB = os.environ.get("POSTGRES_DB")
+POSTGRES_USER = os.environ.get("POSTGRES_USER")
+POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
+ 
 g_app = Flask(__name__)
 
 g_env = jinja2.Environment(
@@ -38,17 +47,61 @@ g_env = jinja2.Environment(
 # =============================================================================
 
 class Database:
-    def __init__(self, filename):
-        self.filename = filename
+    def __init__(self):
+        self.create_tables_if_not_exists()
+
+    def get_connection(self):
+        if DB_TYPE == 'pg':
+            return self.get_connection_pg()
+        return self.get_connection_sqlite()
+
+    def get_connection_sqlite(self):
+        self.filename = "basedados.sqlite"
+        conn = sqlite3.connect(f'file:{self.filename}?mode=ro', uri=True)
+        return conn
+
+    def get_connection_pg(self):
+        conn = psycopg2.connect(
+            host=POSTGRES_HOST,
+            database=POSTGRES_DB,
+            user=POSTGRES_USER,
+            password=POSTGRES_PASSWORD
+        )
+        return conn
+
+    def create_tables_if_not_exists(self):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS coordenadas (
+                rota VARCHAR(256) NOT NULL,
+                veiculo VARCHAR(256) NOT NULL,
+                latitude REAL NOT NULL,
+                longitude REAL NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        cursor.close()
+        conn.commit()
+        conn.close()
+
+    def insere_coordenadas(self, rota, veiculo, latitude, longitude):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        sql_command = f"INSERT INTO coordenadas (rota, veiculo, latitude, longitude) VALUES (%s, %s, %s, %s);"
+        cursor.execute(sql_command, (rota, veiculo, latitude, longitude))
+        cursor.close()
+        conn.commit()
+        conn.close()
 
     def todos_onibus(self):
         # Executa o SQL
-        conn = sqlite3.connect(f'file:{self.filename}?mode=ro', uri=True)
+        conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute("""
             SELECT rota,veiculo,latitude,longitude,timestamp FROM coordenadas 
                 WHERE (rota, timestamp) IN 
-                    (SELECT rota, MAX(timestamp) FROM coordenadas GROUP BY rota);  
+                    (SELECT rota, MAX(timestamp) FROM coordenadas GROUP BY rota);
         """)
         
         # Prepara uma lista de dicionarios
@@ -67,29 +120,34 @@ class Database:
         return result
 
     def historico_do_onibus(self, onibus):
-        conn = sqlite3.connect(f'file:{self.filename}?mode=ro', uri=True)
+        conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM coordenadas WHERE veiculo = ?", (onibus,))
+        cursor.execute("SELECT * FROM coordenadas WHERE veiculo = %s", (onibus,))
         rows = cursor.fetchall()
         for row in rows:
             print(row)
 
-G_DB = Database('basedados.sqlite')
+G_DB = Database()
 
 # =============================================================================
 #  API HTML
 # =============================================================================
 
-@g_app.route('/api')
-def get_api():
+@g_app.route('/api/onibus')
+def get_api_onibus():
     '''
         Retorna a lista de todos os intercampi e suas ultimas posições GPS
-        recebidas pelo servidor em um dicionario
+        recebidas pelo servidor em um vetor
     '''
 
-    dados = G_DB.todos_onibus()
-    return json.dumps(dados)
-
+    rotas = []
+    for item in G_DB.todos_onibus():
+        rotas.append({
+            'nome': item['veiculo'], 
+            "coordenadas": item['coordenadas'], 
+            "descricao": item['timestamp'].strftime("%Y-%m-%d %H:%M:%S")
+        })
+    return json.dumps(rotas)
 
 @g_app.route('/api/rotas')
 def get_api_rotas():
@@ -98,10 +156,25 @@ def get_api_rotas():
         recebidas pelo servidor em um vetor
     '''
 
-    rotas = []
-    for item in G_DB.todos_onibus():
-        rotas.append({'nome': item['veiculo'], "coordenadas": item['coordenadas'], "descricao": item['timestamp']})
-    return json.dumps(rotas)
+    return json.dumps([])
+
+@g_app.route('/api', methods=["POST"])
+def post_api():
+    '''
+        Insere um nova rota
+    '''
+
+    try:
+        data = request.get_json()
+        rota = data["rota"]
+        veiculo = data["veiculo"]
+        latitude = data["lat"]
+        longitude = data["log"]
+        G_DB.insere_coordenadas(rota,veiculo,latitude,longitude)
+        return json.dumps({'status': 'ok'})
+    except Exception as error:
+        return json.dumps({'status': 'error', 'message': str(error)})
+
 
 # =============================================================================
 #  Paginas HTML

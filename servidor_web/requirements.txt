@@ -1,2 +1,4 @@
-ufr
 flask
+psycopg2-binary
+jinja2
+gunicorn

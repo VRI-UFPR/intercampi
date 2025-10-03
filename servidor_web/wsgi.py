@@ -6,8 +6,8 @@ import logging
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 # Adicione o diretório do seu projeto ao PYTHONPATH
-# Substitua '/var/www/meuprojeto_flask' pelo caminho real do seu projeto
-sys.path.insert(0, '/var/www/intercampi/servidor_web')
+sys.path.insert(0, "/usr/local/lib/python3.10/site-packages")
+sys.path.insert(0, '/app')
 
 ## Ative o ambiente virtual
 ## Substitua '/var/www/meuprojeto_flask/venv' pelo caminho real do seu venv
@@ -17,4 +17,4 @@ sys.path.insert(0, '/var/www/intercampi/servidor_web')
 
 # Importe sua aplicação Flask
 # Certifique-se de que 'g_app' corresponde ao nome da sua instância Flask no app_main.py
-from app_main import g_app as application
+from main_server import g_app as application

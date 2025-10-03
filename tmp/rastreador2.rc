@@ -1,0 +1,11 @@
+service rastreador /system/bin/am start -n com.ufpr.rastreador/.MainActivity
+    class main
+    user root  # Ou outro usuário de sistema apropriado
+    group root
+    oneshot
+    disabled
+
+# O gatilho mais seguro para isso é 'sys.boot_completed'
+# Isso garante que o Activity Manager esteja pronto para receber comandos.
+on property:sys.boot_completed=1
+    start rastreador
