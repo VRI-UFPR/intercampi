@@ -1,0 +1,35 @@
+<html>
+
+<body>
+    <div id="userInfo">
+        <p>Click the button to fetch user data.</p>
+    </div>
+
+    <script>
+        // Show a loading message
+        const userInfoDiv = document.getElementById('userInfo');
+        userInfoDiv.innerHTML = '<p>Loading...</p>';
+
+        // 3. Make the network request using fetch()
+        fetch('http://localhost:5000/api/onibus')
+            .then(response => {
+                // Check if the request was successful
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                // Parse the JSON data from the response
+                return response.text();
+            })
+            .then(data => {
+                // 4. Use the data to update the page
+                console.log(data);
+                userInfoDiv.innerHTML = data;
+            })
+            .catch(error => {
+                // 5. Handle any errors that occurred during the fetch
+                console.error('Error fetching data:', error);
+                userInfoDiv.innerHTML = '<p>Sorry, could not fetch user data.</p>';
+            });
+
+    </script>
+</body></html>

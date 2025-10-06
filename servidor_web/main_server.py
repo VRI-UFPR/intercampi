@@ -27,15 +27,26 @@ import sqlite3
 import psycopg2
 
 from flask import Flask, request
+from flask_cors import CORS
 from datetime import datetime
 
+
 DB_TYPE = 'pg'  # pg: postgres, other: sqlite3
+
+## Habilitar essas variaveis, caso execute via docker 
 POSTGRES_HOST = os.environ.get("POSTGRES_HOST")
 POSTGRES_DB = os.environ.get("POSTGRES_DB")
 POSTGRES_USER = os.environ.get("POSTGRES_USER")
 POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
- 
+
+## Habilitar essa variaveis caso execute diretamente
+# POSTGRES_HOST = '10.2.0.2'
+# POSTGRES_DB = 'vri'
+# POSTGRES_USER = 'vri'
+# POSTGRES_PASSWORD = 'mudar123'
+
 g_app = Flask(__name__)
+g_cors = CORS(g_app)
 
 g_env = jinja2.Environment(
     loader=jinja2.FileSystemLoader('./templates'),
