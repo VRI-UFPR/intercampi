@@ -23,15 +23,11 @@ import threading
 import time
 import json
 import jinja2
-import sqlite3
 import psycopg2
 
 from flask import Flask, request
 from flask_cors import CORS
 from datetime import datetime
-
-
-DB_TYPE = 'pg'  # pg: postgres, other: sqlite3
 
 ## Habilitar essas variaveis, caso execute via docker 
 POSTGRES_HOST = os.environ.get("POSTGRES_HOST")
@@ -62,16 +58,9 @@ class Database:
         self.create_tables_if_not_exists()
 
     def get_connection(self):
-        if DB_TYPE == 'pg':
-            return self.get_connection_pg()
-        return self.get_connection_sqlite()
+        if POSTGRES_HOST == "":
+            raise Exception("POSTGRES_HOST nao está definido")
 
-    def get_connection_sqlite(self):
-        self.filename = "basedados.sqlite"
-        conn = sqlite3.connect(f'file:{self.filename}?mode=ro', uri=True)
-        return conn
-
-    def get_connection_pg(self):
         conn = psycopg2.connect(
             host=POSTGRES_HOST,
             database=POSTGRES_DB,
@@ -105,6 +94,39 @@ class Database:
         conn.commit()
         conn.close()
 
+    def onibus(self, onibus_id):
+        """
+            Retorna um dicionario com os dados de um onibus especifico com 
+            sua ultima posição de GPS registrada.
+        """
+
+        # Executa o SQL
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        sql = """
+            SELECT rota,veiculo,latitude,longitude,timestamp FROM coordenadas 
+                WHERE veiculo = %s and (rota, timestamp) IN 
+                    (SELECT rota, MAX(timestamp) FROM coordenadas GROUP BY rota);
+        """
+        cursor.execute(sql, (onibus_id,))
+        
+        # Prepara uma lista de dicionarios
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            return {}
+
+        for row in rows:
+            val = {
+                'rota': row[0], 
+                'veiculo': row[1], 
+                'coordenadas': (row[2],row[3]), 
+                'timestamp': row[4].strftime("%Y-%m-%d %H:%M:%S")
+            }
+            print(val)
+
+        # Retorna o resultado
+        return val
+
     def todos_onibus(self):
         # Executa o SQL
         conn = self.get_connection()
@@ -123,7 +145,7 @@ class Database:
                 'rota': row[0], 
                 'veiculo': row[1], 
                 'coordenadas': (row[2],row[3]), 
-                'timestamp': row[4]
+                'timestamp': row[4].strftime("%Y-%m-%d %H:%M:%S")
             }
             result.append(val)
 
@@ -149,6 +171,12 @@ def get_api_onibus():
     '''
         Retorna a lista de todos os intercampi e suas ultimas posições GPS
         recebidas pelo servidor em um vetor
+
+        [
+            {'veiculo': %s, 'rota': %s, 'coordenadas': (latidude, longetude), 'timestamp': %s}
+            ...
+            {'veiculo': %s, 'rota': %s, 'coordenadas': (latidude, longetude), 'timestamp': %s}
+        ]
     '''
 
     rotas = []
@@ -156,9 +184,21 @@ def get_api_onibus():
         rotas.append({
             'nome': item['veiculo'], 
             "coordenadas": item['coordenadas'], 
-            "descricao": item['timestamp'].strftime("%Y-%m-%d %H:%M:%S")
+            "descricao": item['timestamp']
         })
     return json.dumps(rotas)
+
+@g_app.route('/api/onibus/<onibus_id>')
+def get_api_onibus_id(onibus_id):
+    '''
+        Retorna a lista de um onibus especifico e sua ultima posição do GPS 
+        recebidas pelo servidor.
+
+        {'veiculo': %s, 'rota': %s, 'coordenadas': (latidude, longetude), 'timestamp': %s}
+    '''
+
+    onibus = G_DB.onibus(onibus_id)
+    return json.dumps(onibus)
 
 @g_app.route('/api/rotas')
 def get_api_rotas():
