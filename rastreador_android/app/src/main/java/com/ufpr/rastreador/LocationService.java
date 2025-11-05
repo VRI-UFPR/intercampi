@@ -29,6 +29,7 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Binder;
@@ -43,16 +44,15 @@ import android.util.Log;
 public class LocationService extends Service {
     // Constantes configuraveis
     private final int LOCATION_INTERVAL_MS = 5000;  // 5000ms atualizacao do GPS
-    private final int LOCATION_DISTANCE = 20;    // 20m de mudanca
+    private final int LOCATION_DISTANCE = 10;    // 20m de mudanca
 
     // Objetos Dependentes
-    private MqttService mqtt = null;
+    private HttpService http = null;
     private final LocationServiceBinder binder = new LocationServiceBinder();
 
     // Metodos privados
     private LocationListener locationListener;
     private LocationManager locationManager;
-    private NotificationManager notificationManager;
 
     // log
     private final String TAG = "LocationService";
@@ -90,15 +90,15 @@ public class LocationService extends Service {
         }
 
         // Inicializa a Comunicaçao MQTT
-        mqtt = new MqttService(onibus_id, rota_id, p_main_activity);
-        mqtt.connect();
+        http = new HttpService(onibus_id, rota_id, p_main_activity);
+        // http.connect();
     }
 
     /**
      * Desativa o rastreio
      */
     public void stopTracking() {
-        mqtt.disconnect();
+        // http.disconnect();
         this.onDestroy();
     }
 
@@ -178,12 +178,37 @@ public class LocationService extends Service {
         private final String TAG = "LocationListener";
         private Location lastLocation;
 
+        // GnssStatus.Callback mGnssStatusCallback;
+
         /**
          * Construtor de LocationListener
          * @param provider
          */
         public LocationListener(String provider) {
+
             lastLocation = new Location(provider);
+
+            /*mGnssStatusCallback = new GnssStatus.Callback() {
+                @Override
+                public void onSatelliteStatusChanged(GnssStatus status) {
+                    super.onSatelliteStatusChanged(status);
+
+                    int satelliteCount = status.getSatelliteCount();
+                    int satellitesUsedInFix = 0;
+
+                    // Loop through all satellites to count the ones used in the location fix
+                    for (int i = 0; i < satelliteCount; i++) {
+                        if (status.usedInFix(i)) {
+                            satellitesUsedInFix++;
+                        }
+                    }
+
+                    // Update the TextView on the UI thread
+                    final String message = "Satellites: " + satellitesUsedInFix + " / " + satelliteCount + "\n(Used / Visible)";
+                    // runOnUiThread(() -> gpsStatusTextView.setText(message));
+                    Log.d("GPS_STATUS", message);
+                }
+            };*/
         }
 
         // =========================================================================================
@@ -197,7 +222,7 @@ public class LocationService extends Service {
         @Override
         public void onLocationChanged(Location location) {
             lastLocation = location;
-            mqtt.pub_location( location.getLatitude(), location.getLongitude() );
+            http.pub_location( location.getLatitude(), location.getLongitude() );
         }
 
         /**

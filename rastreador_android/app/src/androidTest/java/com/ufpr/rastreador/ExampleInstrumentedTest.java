@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("com.ufpr.teste8", appContext.getPackageName());
+        assertEquals("com.ufpr.rastreador", appContext.getPackageName());
     }
 }

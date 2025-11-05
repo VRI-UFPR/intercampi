@@ -21,5 +21,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "teste8"
+rootProject.name = "rastreador"
 include ':app'

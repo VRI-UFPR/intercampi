@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         //Get view objects
-        statusText = (TextView) findViewById(R.id.statusText);
+        // statusText = (TextView) findViewById(R.id.statusText);
         onibusText = (TextView) findViewById(R.id.onibusText);
         rotaText = (TextView) findViewById(R.id.rotaText);
         lastSentText = (TextView) findViewById(R.id.lastSentText);
@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
                 gps.startTracking(onibus, rota, this);
                 startButton.setEnabled(false);
                 stopButton.setEnabled(true);
-                statusText.setText("conectando");
+                // statusText.setText("conectando");
                 onibusText.setEnabled(false);
                 rotaText.setEnabled(false);
             } else {
@@ -137,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
                 gps.stopTracking();
                 startButton.setEnabled(true);
                 stopButton.setEnabled(false);
-                statusText.setText("desligado");
+                // statusText.setText("desligado");
                 onibusText.setEnabled(true);
                 rotaText.setEnabled(true);
             } else {
@@ -181,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
                     if (!showRationale) {
                         startButton.setEnabled(false);
                         stopButton.setEnabled(false);
-                        statusText.setText("No access to GPS");
+                        // statusText.setText("No access to GPS");
                         Toast.makeText(this, "GPS Location access was rejected", Toast.LENGTH_LONG);
                     }
                     //If user hasn't checked for "never ask again"
@@ -235,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
      * @param message Mensagem a ser escrita no campo StatusTextText
      */
     public void updateStatusText(String message) {
-        handler.post(() -> statusText.setText(message));
+        // handler.post(() -> statusText.setText(message));
     }
 
     /**
@@ -264,7 +264,7 @@ public class MainActivity extends AppCompatActivity {
             String name = className.getClassName();
             if (name.endsWith("LocationService")) {
                 gps = ((LocationService.LocationServiceBinder) service).getService();
-                statusText.setText("conectando");
+                // statusText.setText("conectando");
                 gps.startTracking(
                         onibusText.getText().toString(),
                         rotaText.getText().toString(),
@@ -280,7 +280,7 @@ public class MainActivity extends AppCompatActivity {
         public void onServiceDisconnected(ComponentName className) {
             if (className.getClassName().equals("LocationService")) {
                 gps = null;
-                statusText.setText("desconectado");
+                // statusText.setText("desconectado");
                 startButton.setEnabled(false);
                 stopButton.setEnabled(true);
             }
