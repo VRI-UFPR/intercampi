@@ -136,7 +136,7 @@ class Database:
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT rota,veiculo,latitude,longitude,timestamp FROM coordenadas 
+            SELECT rota,veiculo,latitude,longitude,vbat,timestamp FROM coordenadas
                 WHERE (rota, timestamp) IN 
                     (SELECT rota, MAX(timestamp) FROM coordenadas GROUP BY rota);
         """)
@@ -144,6 +144,7 @@ class Database:
         # Prepara uma lista de dicionarios
         rows = cursor.fetchall()
         result = []
+
         for row in rows:
             val = {
                 'rota': row[0], 
