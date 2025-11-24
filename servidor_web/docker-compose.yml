@@ -9,8 +9,8 @@ services:
 
     # ports:
     #  - "5000:5000"  # Mapeia a porta 5000 do host para a 5000 do contêiner
-    # volumes:
-    #  - .:/app  # Monta o diretório atual no contêiner para live-reloading
+    volumes:
+      - .:/app  # Monta o diretório atual no contêiner para live-reloading
     env_file:
       - .env
     depends_on:

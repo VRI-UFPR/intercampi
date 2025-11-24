@@ -22,7 +22,7 @@ python3 main_server.py
 
 ## Possíveis Erros
 
-Execução do script ./docker_run.sh pode ocorrer o seguinte erro. E solucionado removendo o volume
+1. Execução do script ./docker_run.sh pode ocorrer o seguinte erro. E solucionado removendo o volume
 servidor_web_postgres_data criado para o docker intercampi_db
 
 ```bash
@@ -78,3 +78,42 @@ Traceback (most recent call last):
 KeyError: 'ContainerConfig'
 ```
 
+2. Problema Error while fetching server API version: Not supported URL scheme http+docker. A solução foi pip3 install -U "docker>=7.1.0" "requests>=2.32.2"
+
+```bash
+
+fgbombardelli@hp:~/workspace/intercampi/servidor_web$ docker-compose up 
+Traceback (most recent call last):
+  File "/home/fgbombardelli/.local/lib/python3.10/site-packages/requests/adapters.py", line 610, in send
+  urllib3.exceptions.URLSchemeUnknown: Not supported URL scheme http+docker
+
+During handling of the above exception, another exception occurred:
+  ...
+  File "/usr/lib/python3/dist-packages/docker/api/client.py", line 197, in __init__
+    self._version = self._retrieve_server_version()
+  File "/usr/lib/python3/dist-packages/docker/api/client.py", line 221, in _retrieve_server_version
+    raise DockerException(
+docker.errors.DockerException: Error while fetching server API version: Not supported URL scheme http+docker
+
+```
+
+3. Problema "TypeError: kwargs_from_env() got an unexpected keyword argument 'ssl_version'". A solução foi "pip3 install docker==6.1.3"
+
+```bash
+Traceback (most recent call last):
+  File "/usr/bin/docker-compose", line 33, in <module>
+    sys.exit(load_entry_point('docker-compose==1.29.2', 'console_scripts', 'docker-compose')())
+  File "/usr/lib/python3/dist-packages/compose/cli/main.py", line 81, in main
+    command_func()
+  File "/usr/lib/python3/dist-packages/compose/cli/main.py", line 200, in perform_command
+    project = project_from_options('.', options)
+  File "/usr/lib/python3/dist-packages/compose/cli/command.py", line 60, in project_from_options
+    return get_project(
+  File "/usr/lib/python3/dist-packages/compose/cli/command.py", line 152, in get_project
+    client = get_client(
+  File "/usr/lib/python3/dist-packages/compose/cli/docker_client.py", line 41, in get_client
+    client = docker_client(
+  File "/usr/lib/python3/dist-packages/compose/cli/docker_client.py", line 124, in docker_client
+    kwargs = kwargs_from_env(environment=environment, ssl_version=tls_version)
+TypeError: kwargs_from_env() got an unexpected keyword argument 'ssl_version'
+```
