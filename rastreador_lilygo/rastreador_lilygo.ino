@@ -222,6 +222,9 @@ void setup_gsm_and_gnss() {
 void setup() {
     Serial.begin(115200);
     setup_gsm_and_gnss();
+
+    // Ativa o pino da Bateria como Input
+    pinMode(BOARD_BAT_ADC_PIN, INPUT);
 }
 
 // ============================================================================
@@ -286,7 +289,7 @@ int loop_get_gps(float& lat2, float& lon2) {
 @brief envia uma requisicao POST para o Servidor HTTP do Intercampi
 
 */
-int loop_send_post(float lat, float lon) {
+int loop_send_post(float lat, float lon, float vbat) {
     if (!modem.isNetworkConnected()) {
         SerialMon.println("Network disconnected");
         return 1;
@@ -295,7 +298,7 @@ int loop_send_post(float lat, float lon) {
     // Prepara a mensagem JSON
     char json_data[1024];
     snprintf(json_data, sizeof(json_data)-1, 
-        "{\"rota\": \"teste1\", \"veiculo\": \"teste11\", \"lat\": %f, \"log\": %f}", lat, lon);
+        "{\"rota\": \"teste1\", \"veiculo\": \"teste11\", \"lat\": %f, \"log\": %f, \"vbat\": %f}", lat, lon, vbat);
 
     // Inicializa a requisicao POST
     SerialMon.println(F("Performing HTTP POST request... "));
@@ -352,7 +355,12 @@ void loop() {
     float lat = 0.0;
     float lon = 0.0;
     if ( loop_get_gps(lat, lon) == OK ) {
-        loop_send_post(lat, lon);
+        // Faz a leitura do pino da bateria
+        const float vbat0 = (float)analogRead(BOARD_BAT_ADC_PIN);
+        const float vbat1 =  (vbat0 / 4095.0) * 2.0 * 3.3 * (1100.0 / 1000.0);
+
+        // Envia os dados para o servidor
+        loop_send_post(lat, lon, vbat1);
     }
 
     // Serial.println("Disabling GPS");
