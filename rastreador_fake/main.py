@@ -52,7 +52,8 @@ for coordinate in rota['coordinates']:
     mensagem = {
         'rota': nome_rota, 
         'veiculo': nome_onibus, 
-        'lat': coordinate[1], 'log': coordinate[0]
+        'lat': coordinate[1], 'log': coordinate[0],
+        'vbat': 40
     }
 
     # 2.2. envia a mensagem

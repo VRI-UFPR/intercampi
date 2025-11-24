@@ -78,6 +78,7 @@ class Database:
                 veiculo VARCHAR(256) NOT NULL,
                 latitude REAL NOT NULL,
                 longitude REAL NOT NULL,
+                vbat REAL DEFAULT -1
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
@@ -85,11 +86,11 @@ class Database:
         conn.commit()
         conn.close()
 
-    def insere_coordenadas(self, rota, veiculo, latitude, longitude):
+    def insere_coordenadas(self, rota, veiculo, latitude, longitude, vbat):
         conn = self.get_connection()
         cursor = conn.cursor()
-        sql_command = f"INSERT INTO coordenadas (rota, veiculo, latitude, longitude) VALUES (%s, %s, %s, %s);"
-        cursor.execute(sql_command, (rota, veiculo, latitude, longitude))
+        sql_command = f"INSERT INTO coordenadas (rota, veiculo, latitude, longitude, vbat) VALUES (%s, %s, %s, %s, %s);"
+        cursor.execute(sql_command, (rota, veiculo, latitude, longitude, vbat))
         cursor.close()
         conn.commit()
         conn.close()
@@ -98,13 +99,15 @@ class Database:
         """
             Retorna um dicionario com os dados de um onibus especifico com 
             sua ultima posição de GPS registrada.
+
+            {'rota': %s, 'veiculo': %s, 'coordenadas': (latidude, longetude), vbat: %f, 'timestamp': %s}
         """
 
         # Executa o SQL
         conn = self.get_connection()
         cursor = conn.cursor()
         sql = """
-            SELECT rota,veiculo,latitude,longitude,timestamp FROM coordenadas 
+            SELECT rota,veiculo,latitude,longitude,vbat,timestamp FROM coordenadas 
                 WHERE veiculo = %s and (rota, timestamp) IN 
                     (SELECT rota, MAX(timestamp) FROM coordenadas GROUP BY rota);
         """
@@ -119,10 +122,11 @@ class Database:
             val = {
                 'rota': row[0], 
                 'veiculo': row[1], 
-                'coordenadas': (row[2],row[3]), 
-                'timestamp': row[4].strftime("%Y-%m-%d %H:%M:%S")
+                'coordenadas': (row[2],row[3]),
+                'vbat': row[4],
+                'timestamp': row[5].strftime("%Y-%m-%d %H:%M:%S")
             }
-            print(val)
+            # print(val)
 
         # Retorna o resultado
         return val
@@ -132,7 +136,7 @@ class Database:
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT rota,veiculo,latitude,longitude,timestamp FROM coordenadas 
+            SELECT rota,veiculo,latitude,longitude,vbat,timestamp FROM coordenadas
                 WHERE (rota, timestamp) IN 
                     (SELECT rota, MAX(timestamp) FROM coordenadas GROUP BY rota);
         """)
@@ -140,12 +144,14 @@ class Database:
         # Prepara uma lista de dicionarios
         rows = cursor.fetchall()
         result = []
+
         for row in rows:
             val = {
                 'rota': row[0], 
                 'veiculo': row[1], 
-                'coordenadas': (row[2],row[3]), 
-                'timestamp': row[4].strftime("%Y-%m-%d %H:%M:%S")
+                'coordenadas': (row[2],row[3]),
+                'vbat': row[4],
+                'timestamp': row[5].strftime("%Y-%m-%d %H:%M:%S")
             }
             result.append(val)
 
@@ -173,9 +179,9 @@ def get_api_onibus():
         recebidas pelo servidor em um vetor
 
         [
-            {'veiculo': %s, 'rota': %s, 'coordenadas': (latidude, longetude), 'timestamp': %s}
+            {'rota': %s, 'veiculo': %s, 'coordenadas': (latidude, longetude), 'vbat': %f, 'timestamp': %s}
             ...
-            {'veiculo': %s, 'rota': %s, 'coordenadas': (latidude, longetude), 'timestamp': %s}
+            {'rota': %s, 'veiculo': %s, 'coordenadas': (latidude, longetude), 'vbat': %f, 'timestamp': %s}
         ]
     '''
 
@@ -194,7 +200,7 @@ def get_api_onibus_id(onibus_id):
         Retorna a lista de um onibus especifico e sua ultima posição do GPS 
         recebidas pelo servidor.
 
-        {'veiculo': %s, 'rota': %s, 'coordenadas': (latidude, longetude), 'timestamp': %s}
+        {'rota': %s, 'veiculo': %s, 'coordenadas': (latidude, longetude), 'vbat': %f, 'timestamp': %s}
     '''
 
     onibus = G_DB.onibus(onibus_id)
@@ -221,7 +227,8 @@ def post_api():
         veiculo = data["veiculo"]
         latitude = data["lat"]
         longitude = data["log"]
-        G_DB.insere_coordenadas(rota,veiculo,latitude,longitude)
+        vbat = data["vbat"]
+        G_DB.insere_coordenadas(rota,veiculo,latitude,longitude,vbat)
         return json.dumps({'status': 'ok'})
     except Exception as error:
         return json.dumps({'status': 'error', 'message': str(error)})
