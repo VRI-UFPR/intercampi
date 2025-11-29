@@ -55,7 +55,7 @@
 #define MODEM_GPS_ENABLE_LEVEL              (7)
 
 #define OK       (0)
-
+#define ERROR    (1)
 
 #define PRODUCT_MODEL_NAME                  "LilyGo-A7608X ESP32 Version"
 
@@ -86,7 +86,7 @@ const char gprsPass[] = "Claro";
 //  Setup
 // ============================================================================
 
-void setup_gsm_and_gnss() {
+void setup_a7608() {
 #ifdef BOARD_POWERON_PIN
     /* Set Power control pin output
     * * @note      Known issues, ESP32 (V1.2) version of T-A7670, T-A7608,
@@ -177,51 +177,11 @@ void setup_gsm_and_gnss() {
     /*if (GSM_PIN && modem.getSimStatus() != 3) {
         modem.simUnlock(GSM_PIN);
     }*/
-
-    // Conecta na rede 4G
-    modem.gprsConnect(apn, gprsUser, gprsPass);
-    SerialMon.println("Waiting for network...");
-    if (!modem.waitForNetwork()) {
-        SerialMon.println(" fail");
-        return ;
-    }
-
-    if (modem.isNetworkConnected()) {
-        SerialMon.println("Network connected");
-    }
-
-    // GPRS connection parameters are usually set after network registration
-    SerialMon.print(F("Connecting to "));
-    SerialMon.print(apn);
-    if (!modem.gprsConnect(apn, gprsUser, gprsPass)) {
-        SerialMon.println(" fail");
-        return;
-    }
-    SerialMon.println(" success");
-
-    // Verifica se tem internet
-    while (!modem.isGprsConnected()) {
-        // SerialMon.println("GPRS connected");
-        SerialMon.print(".");
-        delay(1000);
-    }
-    SerialMon.println("GPRS connected");
-
-    // Habilita o GNSS
-    Serial.println("Enabling GPS/GNSS/GLONASS");
-    while (!modem.enableGPS(MODEM_GPS_ENABLE_GPIO, MODEM_GPS_ENABLE_LEVEL)) {
-        Serial.print(".");
-    }
-    Serial.println();
-    Serial.println("GPS Enabled");
-
-    // Set GPS Baud to 115200
-    modem.setGPSBaud(115200);
 }
 
 void setup() {
     Serial.begin(115200);
-    setup_gsm_and_gnss();
+    setup_a7608();
 
     // Ativa o pino da Bateria como Input
     pinMode(BOARD_BAT_ADC_PIN, INPUT);
@@ -231,57 +191,40 @@ void setup() {
 //  Loop
 // ============================================================================
 
-int loop_get_gps(float& lat2, float& lon2) {
-    float speed2    = 0;
-    float alt2      = 0;
-    int   vsat2     = 0;
-    int   usat2     = 0;
-    float accuracy2 = 0;
-    int   year2     = 0;
-    int   month2    = 0;
-    int   day2      = 0;
-    int   hour2     = 0;
-    int   min2      = 0;
-    int   sec2      = 0;
+int8_t loop_get_gnss(float& lat, float& lon) {
+    float speed    = 0;
+    float alt      = 0;
+    int   vsat     = 0;
+    int   usat     = 0;
+    float accuracy = 0;
+    int   year     = 0;
+    int   month    = 0;
+    int   day      = 0;
+    int   hour     = 0;
+    int   min      = 0;
+    int   sec      = 0;
     uint8_t    fixMode   = 0;
 
+    // Tenta 5 vezes pegar a posição do GNSS
     int i=0;
     for (; i<5; i++) {
+        // Obtem a posição do GNSS
         Serial.println("Requesting current GPS/GNSS/GLONASS location");
-        if (modem.getGPS(&fixMode, &lat2, &lon2, &speed2, &alt2, &vsat2, &usat2, &accuracy2,
-                         &year2, &month2, &day2, &hour2, &min2, &sec2)) {
+        const bool res = modem.getGPS(&fixMode, &lat, &lon, &speed, 
+            &alt, &vsat, &usat, &accuracy, &year, &month, &day, &hour, &min, &sec);
 
-            Serial.print("FixMode:"); Serial.println(fixMode);
-            Serial.print("Latitude:"); Serial.print(lat2, 6); Serial.print("\tLongitude:"); Serial.println(lon2, 6);
-            Serial.print("Speed:"); Serial.print(speed2); Serial.print("\tAltitude:"); Serial.println(alt2);
-            Serial.print("Visible Satellites:"); Serial.print(vsat2);
-
-            // GPS_BuiltIn cannot get the number of satellites in use, so it always returns 0
-            Serial.print("\tUsed Satellites:"); Serial.println(usat2);
-            Serial.print("Accuracy:"); Serial.println(accuracy2);
-
-            Serial.print("Year:"); Serial.print(year2);
-            Serial.print("\tMonth:"); Serial.print(month2);
-            Serial.print("\tDay:"); Serial.println(day2);
-
-            Serial.print("Hour:"); Serial.print(hour2);
-            Serial.print("\tMinute:"); Serial.print(min2);
-            Serial.print("\tSecond:"); Serial.println(sec2);
+        // Obteve uma posição do GNSS valida
+        if ( res ) {
             break;
+
+        // Espera 15 segundos para tentar novamente
         } else {
-            Serial.println("Couldn't get GPS/GNSS/GLONASS location, retrying in 15s.");
             delay(15000);
         }
     }
-    if ( i >= 5 ) {
-        return 1;
-    }
 
-    Serial.println("Retrieving GPS/GNSS/GLONASS location again as a string");
-    String gps_raw = modem.getGPSraw();
-    Serial.print("GPS/GNSS Based Location String:");
-    Serial.println(gps_raw);
-    return OK;
+    // Fim
+    return (i < 5) ? OK : ERROR;
 }
 
 
@@ -289,10 +232,10 @@ int loop_get_gps(float& lat2, float& lon2) {
 @brief envia uma requisicao POST para o Servidor HTTP do Intercampi
 
 */
-int loop_send_post(float lat, float lon, float vbat) {
+int8_t loop_send_post(float lat, float lon, float vbat) {
     if (!modem.isNetworkConnected()) {
         SerialMon.println("Network disconnected");
-        return 1;
+        return ERROR;
     }
 
     // Prepara a mensagem JSON
@@ -308,7 +251,7 @@ int loop_send_post(float lat, float lon, float vbat) {
     int err = http.post(resource, content_type, json_data);
     if (err != 0) {
         SerialMon.println(F("failed to connect"));
-        return 1;
+        return ERROR;
     }
 
     // Espera receber a resposta do Servidor
@@ -317,7 +260,7 @@ int loop_send_post(float lat, float lon, float vbat) {
     SerialMon.println(status);
     if (!status) {
         delay(10000);
-        return 1;
+        return ERROR;
     }
 
     // Mostra a resposta do Servidor
@@ -350,22 +293,74 @@ int loop_send_post(float lat, float lon, float vbat) {
     return OK;
 }
 
-
-void loop() {
-    float lat = 0.0;
-    float lon = 0.0;
-    if ( loop_get_gps(lat, lon) == OK ) {
-        // Faz a leitura do pino da bateria
-        const float vbat0 = (float)analogRead(BOARD_BAT_ADC_PIN);
-        const float vbat1 =  (vbat0 / 4095.0) * 2.0 * 3.3 * (1100.0 / 1000.0);
-
-        // Envia os dados para o servidor
-        loop_send_post(lat, lon, vbat1);
+int8_t loop_verify_and_connect_4G() {
+    // Verifica se já está conectado
+    if (modem.isNetworkConnected()) {
+        return OK;
     }
 
-    // Serial.println("Disabling GPS");
-    // modem.disableGPS(MODEM_GPS_ENABLE_GPIO, !MODEM_GPS_ENABLE_LEVEL);
+    // Conecta na rede 4G
+    modem.gprsConnect(apn, gprsUser, gprsPass);
+    SerialMon.println("Waiting for network...");
+    if (!modem.waitForNetwork()) {
+        SerialMon.println(" fail");
+        return ERROR;
+    }
+
+    if (modem.isNetworkConnected()) {
+        SerialMon.println("Network connected");
+    }
+
+    // GPRS connection parameters are usually set after network registration
+    SerialMon.print(F("Connecting to "));
+    SerialMon.print(apn);
+    if (!modem.gprsConnect(apn, gprsUser, gprsPass)) {
+        SerialMon.println(" fail");
+        return ERROR;
+    }
+    SerialMon.println(" success");
+
+    // Verifica se tem internet
+    while (!modem.isGprsConnected()) {
+        // SerialMon.println("GPRS connected");
+        SerialMon.print(".");
+        delay(1000);
+    }
+    SerialMon.println("GPRS connected");
+
+    // Habilita o GNSS
+    Serial.println("Enabling GPS/GNSS/GLONASS");
+    while (!modem.enableGPS(MODEM_GPS_ENABLE_GPIO, MODEM_GPS_ENABLE_LEVEL)) {
+        Serial.print(".");
+    }
+    Serial.println();
+    Serial.println("GPS Enabled");
+
+    // Set GPS Baud to 115200
+    modem.setGPSBaud(115200);
+    return OK;
+}
+
+
+void loop() {
+    const int32_t sleep_seconds = 10;
+    const int8_t res1 = loop_verify_and_connect_4G();
+   
+    // Execucao normal
+    if ( res1 == OK ) {
+        float lat = 0.0;
+        float lon = 0.0;
+        if ( loop_get_gnss(lat, lon) == OK ) {
+            // Faz a leitura do pino da bateria
+            const float vbat0 = (float)analogRead(BOARD_BAT_ADC_PIN);
+            const float vbat1 = (vbat0 / 4095.0) * 2.0 * 3.3 * (1100.0 / 1000.0);
+
+            // Envia os dados para o servidor
+            loop_send_post(lat, lon, vbat1);
+        }
+
+    }
 
     // espera 30 segundos
-    delay(30000);    
+    delay(sleep_seconds*1000);    
 }
