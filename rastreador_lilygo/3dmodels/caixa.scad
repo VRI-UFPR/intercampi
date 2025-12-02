@@ -15,7 +15,9 @@ module caixa() {
     // Base
     difference() {
         cube([largura,29+8.5,espessura]);
-        translate([57.5,23.5,0]) cube([20,7.5,espessura]);
+        
+        // Espaço para acessar o pino de liga/desliga
+        // translate([55,23.5,0]) cube([12.5,7.5,espessura]);
     }
 
     // Tampa ao lado da Pilha
@@ -79,7 +81,7 @@ module tampa() {
             cylinder(parafuso_comprimento,parafuso_raio,parafuso_raio);
         
         // espaço para USB
-        translate([52.5,23.5,0]) cube([20,7.5,espessura]);
+        translate([50,23.5,0]) cube([12,7.5,espessura]);
     }
     
     difference() {
@@ -94,18 +96,35 @@ module tampa() {
             cylinder(parafuso_comprimento,parafuso_raio,parafuso_raio);
         
         // espaço para USB
-        translate([52.5,23.5,-espessura]) cube([20,7.5,espessura]);
+        translate([50,23.5,-espessura]) cube([12,7.5,espessura]);
     }
     
     // translate([10,25.5,-5]) cube([2.5,2.5,5]);
     // translate([3.5,22.5,-5]) cube([2.5,2.5,5]);
-    // translate([90,29.6,-8]) cube([2.5,7.8,8]);
+    translate([100,29.6,-9]) cube([2.5,7.8,9]);
 }
+
 
 
 caixa();
 
-// translate([0,0,37]) tampa();
+/*
+difference() {
+    translate([0,0,37]) tampa();
+    rotate([0,0,180]) scale(0.8) translate([-132,-25,46]) linear_extrude(height = 8) {
+        text("INTERCAMPI 2", font="style=Bold", size=12);
+    }
+    
+    rotate([0,0,180]) scale(0.4) translate([-145,-20,93]) linear_extrude(height = 8) {
+        text("(41) 98827 1051", font="style=Bold", size=12);
+    }
+};
+*/
+
+
+
+
+
 
 // Mostra o modelo 3D da placa
 // translate([65,-83,-11]) rotate([0,0,0]) import("TTGO_SIM7000GV1.stl");

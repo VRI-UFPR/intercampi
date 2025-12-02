@@ -74,6 +74,9 @@ const char resource[] = "/api";
 const int  port       = 1883;
 TinyGsmClient gsm_client(modem);
 
+// Constantes
+const char rota[] = "intercampi1";
+const char onibus[] = "intercampi1";
 
 // Your GPRS credentials, if any
 const char apn[]      = "java.claro.com.br";
@@ -241,7 +244,7 @@ int8_t loop_send_post(float lat, float lon, float vbat) {
     // Prepara a mensagem JSON
     char json_data[1024];
     snprintf(json_data, sizeof(json_data)-1, 
-        "{\"rota\": \"teste1\", \"veiculo\": \"teste11\", \"lat\": %f, \"log\": %f, \"vbat\": %f}", lat, lon, vbat);
+        "{\"rota\": \"%s\", \"veiculo\": \"%s\", \"lat\": %f, \"log\": %f, \"vbat\": %f}", rota, onibus, lat, lon, vbat);
 
     // Inicializa a requisicao POST
     SerialMon.println(F("Performing HTTP POST request... "));
@@ -331,10 +334,10 @@ int8_t loop_verify_and_connect_4G() {
     // Habilita o GNSS
     Serial.println("Enabling GPS/GNSS/GLONASS");
     while (!modem.enableGPS(MODEM_GPS_ENABLE_GPIO, MODEM_GPS_ENABLE_LEVEL)) {
-        Serial.print(".");
+        // Serial.print(".");
     }
-    Serial.println();
-    Serial.println("GPS Enabled");
+    SerialMon.println();
+    SerialMon.println("GPS Enabled");
 
     // Set GPS Baud to 115200
     modem.setGPSBaud(115200);
