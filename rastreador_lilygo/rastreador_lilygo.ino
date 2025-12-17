@@ -187,7 +187,7 @@ void setup() {
     setup_a7608();
 
     // Ativa o pino da Bateria como Input
-    pinMode(BOARD_BAT_ADC_PIN, INPUT);
+    // pinMode(BOARD_BAT_ADC_PIN, INPUT);
 }
 
 // ============================================================================
@@ -197,6 +197,8 @@ void setup() {
 int8_t loop_get_gnss(float& lat, float& lon) {
     float speed    = 0;
     float alt      = 0;
+    float new_lat  = 0.0;
+    float new_lon  = 0.0;
     int   vsat     = 0;
     int   usat     = 0;
     float accuracy = 0;
@@ -208,26 +210,19 @@ int8_t loop_get_gnss(float& lat, float& lon) {
     int   sec      = 0;
     uint8_t    fixMode   = 0;
 
-    // Tenta 5 vezes pegar a posição do GNSS
-    int i=0;
-    for (; i<5; i++) {
-        // Obtem a posição do GNSS
-        Serial.println("Requesting current GPS/GNSS/GLONASS location");
-        const bool res = modem.getGPS(&fixMode, &lat, &lon, &speed, 
-            &alt, &vsat, &usat, &accuracy, &year, &month, &day, &hour, &min, &sec);
+    // Obtem a posição do GNSS
+    Serial.println("Requesting current GPS/GNSS/GLONASS location");
+    const bool res = modem.getGPS(&fixMode, &new_lat, &new_lon, &speed, 
+        &alt, &vsat, &usat, &accuracy, &year, &month, &day, &hour, &min, &sec);
 
-        // Obteve uma posição do GNSS valida
-        if ( res ) {
-            break;
-
-        // Espera 15 segundos para tentar novamente
-        } else {
-            delay(15000);
-        }
+    // Obteve uma posição do GNSS valida
+    if ( res ) {
+        lat = new_lat;
+        lon = new_lon;
+        return OK;
     }
 
-    // Fim
-    return (i < 5) ? OK : ERROR;
+    return ERROR;
 }
 
 
@@ -333,6 +328,9 @@ int8_t loop_verify_and_connect_4G() {
     SerialMon.println();
     SerialMon.println("GPS Enabled");
 
+    // Habilita posicionamento atraves das torres de celular
+    modem.enableAGPS();
+
     // Set GPS Baud to 115200
     modem.setGPSBaud(115200);
     return OK;
@@ -342,18 +340,22 @@ int8_t loop_verify_and_connect_4G() {
 void loop() {
     const int32_t sleep_seconds = 10;
     const int8_t res1 = loop_verify_and_connect_4G();
-   
+    const float vbat1 = -1.0;
+
     // Execucao normal
     if ( res1 == OK ) {
-        float lat = 0.0;
-        float lon = 0.0;
+        static int8_t cont = 0;
+        static float lat = 0.0;
+        static float lon = 0.0;
         if ( loop_get_gnss(lat, lon) == OK ) {
-            // Faz a leitura do pino da bateria
-            const float vbat0 = (float)analogRead(BOARD_BAT_ADC_PIN);
-            const float vbat1 = (vbat0 / 4095.0) * 2.0 * 3.3 * (1100.0 / 1000.0);
-
             // Envia os dados para o servidor
             loop_send_post(lat, lon, vbat1);
+        } else {
+            cont += 1;
+            if ( cont > 5 ) {
+                loop_send_post(lat, lon, vbat1);
+                cont = 0;
+            }
         }
 
     }
