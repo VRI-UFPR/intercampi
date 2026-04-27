@@ -78,7 +78,9 @@ while ufr.loop():
     pack = link.get("> %d %s")
     if pack[0] == 1:
         now = datetime.now()
-        print(f"[{now}] HB {pack[1]}")
+        rota = pack[1]
+        bateria = link.get("%d")
+        print(f"[{now}] HB {rota} {bateria}")
     else:
         now = datetime.now()
         rota = pack[1]

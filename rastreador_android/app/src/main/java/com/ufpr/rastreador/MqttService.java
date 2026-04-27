@@ -23,6 +23,12 @@
 
 package com.ufpr.rastreador;
 
+import static android.content.Context.BATTERY_SERVICE;
+import static androidx.core.content.ContextCompat.getSystemService;
+
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.BatteryManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -199,14 +205,18 @@ public class MqttService {
      */
     public void pub_heartbeat() {
         try {
-            // 1. Pack data into a byte array
+            // 1. Pega o valor da bateria
+            int batteryLevel = getBattery();
+
+            // 2. Pack data into a byte array
             MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
             packer.packInt(CMD_SEND_HEARTBEAT);
             packer.packString(this.onibus_id);
+            packer.packInt(batteryLevel);
             packer.close();
             byte[] bytes = packer.toByteArray();
 
-            // 2. Envia os dados para o MQTT
+            // 3. Envia os dados para o MQTT
             MqttMessage message = new MqttMessage(bytes);
             client.publish(TOPIC, message);
         } catch (MqttException e) {
@@ -269,4 +279,14 @@ public class MqttService {
         }
     }
 
+    private int getBattery() {
+        IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        Intent batteryStatus = this.main_activity.registerReceiver(null, ifilter);
+
+        // Get battery level
+        int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+        int batteryPct = level * 100 / scale;
+        return batteryPct;
+    }
 }
