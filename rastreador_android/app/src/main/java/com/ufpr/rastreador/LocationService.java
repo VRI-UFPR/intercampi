@@ -33,8 +33,10 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Binder;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
+import android.os.Looper;
 
 // =================================================================================================
 //  class LocationService extends Service
@@ -42,8 +44,8 @@ import android.util.Log;
 
 public class LocationService extends Service {
     // Constantes configuraveis
-    private final int LOCATION_INTERVAL_MS = 5000;  // 5000ms atualizacao do GPS
-    private final int LOCATION_DISTANCE = 20;    // 20m de mudanca
+    private final int LOCATION_INTERVAL_MS = 1000;  // 1000ms atualizacao do GPS
+    private final int LOCATION_DISTANCE = 5;    // 20m de mudanca
 
     // Objetos Dependentes
     private MqttService mqtt = null;
@@ -53,6 +55,10 @@ public class LocationService extends Service {
     private LocationListener locationListener;
     private LocationManager locationManager;
     private NotificationManager notificationManager;
+
+    // Objetos necessarios para a thread do heartbeat
+    private Runnable runnable;
+    private Handler handler;
 
     // log
     private final String TAG = "LocationService";
@@ -92,12 +98,25 @@ public class LocationService extends Service {
         // Inicializa a Comunicaçao MQTT
         mqtt = new MqttService(onibus_id, rota_id, p_main_activity);
         mqtt.connect();
+
+        // Inicializa o HeartBeat
+        handler = new Handler(Looper.getMainLooper());
+        runnable = new Runnable() {
+            @Override
+            public void run() {
+                mqtt.pub_heartbeat();
+                handler.postDelayed(this, 60000); // 60 segundo
+            }
+
+        };
+        handler.post(runnable);
     }
 
     /**
      * Desativa o rastreio
      */
     public void stopTracking() {
+        handler.removeCallbacks(runnable);
         mqtt.disconnect();
         this.onDestroy();
     }

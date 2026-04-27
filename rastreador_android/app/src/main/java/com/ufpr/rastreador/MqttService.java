@@ -70,6 +70,12 @@ public class MqttService {
     private int reconnectDelay = 1000;
     private final int maxReconnectDelay = 60000;
 
+    // Constantes dos comandos
+    private int CMD_SEND_HEARTBEAT = 1;
+
+    // Envia mensagem (2, Nome_Onibus, Latidude, Longitude)
+    private int CMD_SEND_DATA_V1 = 2;
+
     // Log
     private String TAG = "MQTT";
 
@@ -109,22 +115,22 @@ public class MqttService {
             // Conecta ao servidor MQTT
             client = new MqttClient(connectionUri, this.onibus_id, null);
             MqttConnectOptions options = new MqttConnectOptions();
-            options.setKeepAliveInterval(180);
+            options.setKeepAliveInterval(3000);
             options.setConnectionTimeout(30);
             client.connect(options);
 
             // Envia para MainActivity a mensagem para mostrar na tela
             handler.post(() -> main_activity.updateStatusText( HOST_PORT ));
 
-            // Assina o topico de comando
-            client.subscribe(TOPIC_CMD_REQ, 0);
+            // (Desativado) Assina o topico de comando
+            // client.subscribe(TOPIC_CMD_REQ, 0);
 
             // Associa os callbacks para os eventos
             client.setCallback(new MqttCallbackExtended() {
                 @Override
                 public void connectComplete(boolean reconnect, String serverUri) {
                     isConnected = true;
-                    reconnectDelay = 1000; // Reseta o delay após conexão bem-sucedida
+                    reconnectDelay = 5000; // Reseta o delay após conexão bem-sucedida
                     Log.d("MQTT", "Conectado! Reconexão automática: " + reconnect);
                 }
 
@@ -141,12 +147,13 @@ public class MqttService {
                     String payload = new String(message.getPayload());
                     Log.d("MQTT", "Mensagem recebida: " + payload.length() + " [Tópico: " + topic + "]");
 
+                    /* Desativado
                     if ( payload.substring(0,4).equals("ping") ) {
                         handler.post(() -> main_activity.updateStatusText("ping"));
                         pub_answer("OK");
                     } else {
                         Log.d("MQTT", "Comando nao encontrado");
-                    }
+                    }*/
 
                 }
 
@@ -188,6 +195,28 @@ public class MqttService {
     }
 
     /**
+     * Publica o heartbeat
+     */
+    public void pub_heartbeat() {
+        try {
+            // 1. Pack data into a byte array
+            MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
+            packer.packInt(CMD_SEND_HEARTBEAT);
+            packer.packString(this.onibus_id);
+            packer.close();
+            byte[] bytes = packer.toByteArray();
+
+            // 2. Envia os dados para o MQTT
+            MqttMessage message = new MqttMessage(bytes);
+            client.publish(TOPIC, message);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * Publica a localização do veiculo
      *
      * @param lat latitude do veiculo
@@ -197,7 +226,7 @@ public class MqttService {
         try {
             // 1. Pack data into a byte array
             MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
-            packer.packInt(1);
+            packer.packInt(CMD_SEND_DATA_V1);
             packer.packString(this.onibus_id);
             packer.packFloat(lat);
             packer.packFloat(log);
@@ -210,7 +239,7 @@ public class MqttService {
 
             // Envia o horario para MainActivity para mostrar na tela
             String horaAtual = sdf.format(new Date());
-            handler.post(() -> main_activity.updateLastSentText( horaAtual ));
+            handler.post(() -> main_activity.updateLastSentText(horaAtual));
         } catch (MqttException e) {
             e.printStackTrace();
         } catch (IOException e) {
