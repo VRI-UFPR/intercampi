@@ -29,18 +29,6 @@ from flask import Flask, request
 from flask_cors import CORS
 from datetime import datetime
 
-## Habilitar essas variaveis, caso execute via docker 
-POSTGRES_HOST = os.environ.get("POSTGRES_HOST")
-POSTGRES_DB = os.environ.get("POSTGRES_DB")
-POSTGRES_USER = os.environ.get("POSTGRES_USER")
-POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
-
-## Habilitar essa variaveis caso execute diretamente
-# POSTGRES_HOST = '10.2.0.2'
-# POSTGRES_DB = 'vri'
-# POSTGRES_USER = 'vri'
-# POSTGRES_PASSWORD = 'mudar123'
-
 g_app = Flask(__name__)
 g_cors = CORS(g_app)
 
@@ -55,45 +43,13 @@ g_env = jinja2.Environment(
 
 class Database:
     def __init__(self):
-        self.create_tables_if_not_exists()
+        self.dados = {}
 
-    def get_connection(self):
-        if POSTGRES_HOST == "":
-            raise Exception("POSTGRES_HOST nao está definido")
-
-        conn = psycopg2.connect(
-            host=POSTGRES_HOST,
-            database=POSTGRES_DB,
-            user=POSTGRES_USER,
-            password=POSTGRES_PASSWORD
-        )
-        return conn
-
-    def create_tables_if_not_exists(self):
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS coordenadas (
-                rota VARCHAR(256) NOT NULL,
-                veiculo VARCHAR(256) NOT NULL,
-                latitude REAL NOT NULL,
-                longitude REAL NOT NULL,
-                vbat REAL DEFAULT -1
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-        cursor.close()
-        conn.commit()
-        conn.close()
-
-    def insere_coordenadas(self, rota, veiculo, latitude, longitude, vbat):
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        sql_command = f"INSERT INTO coordenadas (rota, veiculo, latitude, longitude, vbat) VALUES (%s, %s, %s, %s, %s);"
-        cursor.execute(sql_command, (rota, veiculo, latitude, longitude, vbat))
-        cursor.close()
-        conn.commit()
-        conn.close()
+    def salva_coordenadas(self, rota, veiculo, latitude, longitude):
+        timestamp = datetime.now().timestamp()
+        self.dados[rota] = {'rota': rota, 'veiculo': veiculo, 'latitude': 
+                            latitude, 'longitude': longitude, 'vbat': 0, 
+                            'timestamp': timestamp}
 
     def onibus(self, onibus_id):
         """
@@ -103,33 +59,10 @@ class Database:
             {'rota': %s, 'veiculo': %s, 'coordenadas': (latidude, longetude), vbat: %f, 'timestamp': %s}
         """
 
-        # Executa o SQL
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        sql = """
-            SELECT rota,veiculo,latitude,longitude,vbat,timestamp FROM coordenadas 
-                WHERE veiculo = %s and (rota, timestamp) IN 
-                    (SELECT rota, MAX(timestamp) FROM coordenadas GROUP BY rota);
-        """
-        cursor.execute(sql, (onibus_id,))
+        if onibus_id in self.dados:
+            return self.dados[onibus_id]
         
-        # Prepara uma lista de dicionarios
-        rows = cursor.fetchall()
-        if len(rows) == 0:
-            return {}
-
-        for row in rows:
-            val = {
-                'rota': row[0], 
-                'veiculo': row[1], 
-                'coordenadas': (row[2],row[3]),
-                'vbat': row[4],
-                'timestamp': row[5].strftime("%Y-%m-%d %H:%M:%S")
-            }
-            # print(val)
-
-        # Retorna o resultado
-        return val
+        return {'rota': '', 'veiculo': '', 'latitude': 0, 'longitude': 0, 'vbat': 0, 'timestamp': 0}
 
     def todos_onibus(self):
         # Executa o SQL
@@ -158,13 +91,6 @@ class Database:
         # Retorna o resultado
         return result
 
-    def historico_do_onibus(self, onibus):
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM coordenadas WHERE veiculo = %s", (onibus,))
-        rows = cursor.fetchall()
-        for row in rows:
-            print(row)
 
 G_DB = Database()
 
@@ -183,6 +109,8 @@ def get_api_onibus():
             ...
             {'rota': %s, 'veiculo': %s, 'coordenadas': (latidude, longetude), 'vbat': %f, 'timestamp': %s}
         ]
+
+        timestamp: (String) => %Y-%m-%d %H:%M:%S
     '''
 
     rotas = []
@@ -227,8 +155,7 @@ def post_api():
         veiculo = data["veiculo"]
         latitude = data["lat"]
         longitude = data["log"]
-        vbat = data["vbat"]
-        G_DB.insere_coordenadas(rota,veiculo,latitude,longitude,vbat)
+        G_DB.salva_coordenadas(rota,veiculo,latitude,longitude)
         return json.dumps({'status': 'ok'})
     except Exception as error:
         return json.dumps({'status': 'error', 'message': str(error)})

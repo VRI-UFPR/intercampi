@@ -186,7 +186,9 @@ public class LocationService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        return START_NOT_STICKY;
+
+        // IMPORTANTE, Android reinicia o serviço caso ele for morto
+        return START_STICKY;
     }
 
     // =============================================================================================

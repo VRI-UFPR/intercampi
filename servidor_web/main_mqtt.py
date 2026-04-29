@@ -84,9 +84,12 @@ while ufr.loop():
     else:
         now = datetime.now()
         rota = pack[1]
+        # Se o nome da rota for nula, descarta o pacote
+        if len(rota) == 0:
+            continue
         pack = link.get("%f %f")
         latidude = pack[0]
         longitude = pack[1]
-        print(now, rota, pack)
+        print(f"[{now}] SEND {rota} {pack}")
         database.save(rota, latidude, longitude)
         send_http_server(rota, rota, latidude, longitude)
