@@ -122,7 +122,7 @@ public class MqttService {
             client = new MqttClient(connectionUri, this.onibus_id, null);
             MqttConnectOptions options = new MqttConnectOptions();
             options.setKeepAliveInterval(3000);
-            options.setConnectionTimeout(30);
+            options.setConnectionTimeout(60);
             client.connect(options);
 
             // Envia para MainActivity a mensagem para mostrar na tela
