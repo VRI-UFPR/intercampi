@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Serviço da nossa aplicação Flask
   web:
-    build: .  # Constrói a imagem a partir do Dockerfile no diretório atual
+    # build: .  # Constrói a imagem a partir do Dockerfile no diretório atual
     container_name: intercampi_web
     image: intercampi_web
 

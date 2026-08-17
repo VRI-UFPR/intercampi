@@ -32,11 +32,11 @@ HOST_URL = "http://127.0.0.1:5000/api"
 #  Funções Privadas
 # =============================================================================
 
-def send_http_server(rota, onibus, latitude, longetude):
+def send_http_server(rota, onibus, latitude, longitude):
     mensagem = {
         'rota': rota, 
         'veiculo': onibus, 
-        'lat': latitude, 'log': longetude,
+        'lat': latitude, 'log': longitude,
         'vbat': -1
     }
 
@@ -94,4 +94,4 @@ while ufr.loop():
         longitude = pack[1]
         print(f"[{now}] SEND {rota} {pack}")
         # database.save(rota, latidude, longitude)
-        # send_http_server(rota, rota, latidude, longitude)
+        send_http_server(rota, rota, latidude, longitude)

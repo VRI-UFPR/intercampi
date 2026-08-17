@@ -23,6 +23,9 @@ import json
 import time
 import sys
 
+MSG_HEARTBEAT = 1
+MSG_SEND = 2
+
 # =============================================================================
 #  Main
 # =============================================================================
@@ -44,14 +47,13 @@ rota = json.loads(fd.read())
 fd.close()
 
 # 2. Abre o publicador MQTT 
-pub = ufr.Publisher("@new mqtt @coder text @host 185.159.82.136 @topic intercampi")
+pub = ufr.Publisher("@new mqtt @coder msgpack @host 177.153.62.174 @topic /ufpr/intercampi")
 
 # 3. Publica todas as coordenadas, uma a cada 5 segundos
 for coordinate in rota['coordinates']:
-    mensagem = {'rota': nome_rota, 'veiculo': nome_onibus, 'lat': coordinate[1], 'log': coordinate[0]}
-    texto_json = json.dumps(mensagem)
-    print(texto_json)
-    pub.put("s\n", texto_json)
+    longitude = coordinate[0]
+    latidude = coordinate[1]
+    pub.put("%d %s %f %f\n", MSG_SEND, 'onibus_falso', latidude, longitude)
     time.sleep(5)
 
 # 4. Fecha o publicador

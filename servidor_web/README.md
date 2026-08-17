@@ -97,7 +97,7 @@ docker.errors.DockerException: Error while fetching server API version: Not supp
 
 ```
 
-3. Problema "TypeError: kwargs_from_env() got an unexpected keyword argument 'ssl_version'". A solução foi "pip3 install docker==6.1.3"
+3. Problema "TypeError: kwargs_from_env() got an unexpected keyword argument 'ssl_version'". A solução foi usar o seguinte comando "docker compose up -d"
 
 ```bash
 Traceback (most recent call last):

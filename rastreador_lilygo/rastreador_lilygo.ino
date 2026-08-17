@@ -15,7 +15,6 @@
 // install Arduino ESP32 by Espressif Systems 3.3.2
 // install ArduinoHttpClient by Arduino 0.6.1
 
-
 // Configura o TinyGSMClient,
 #define TINY_GSM_MODEM_A7608           // A7608X is the same SIM7600
 #include <TinyGsmClient.h>
@@ -52,7 +51,7 @@
 
 // 127 is defined in GSM as the AUXVDD index
 #define MODEM_GPS_ENABLE_GPIO               (127)
-#define MODEM_GPS_ENABLE_LEVEL              (7)
+#define MODEM_GPS_ENABLE_LEVEL              (3)
 
 #define OK       (0)
 #define ERROR    (1)
@@ -75,15 +74,39 @@ const int  port       = 1883;
 TinyGsmClient gsm_client(modem);
 
 // Constantes
-const char rota[] = "intercampi2";
-const char onibus[] = "intercampi2";
+const char rota[] = "intercampi1";
+const char onibus[] = "intercampi1";
 
 // Your GPRS credentials, if any
 const char apn[]      = "java.claro.com.br";
-const char gprsUser[] = "Claro";
-const char gprsPass[] = "Claro";
+const char gprsUser[] = "claro";
+const char gprsPass[] = "claro";
 
 #define GSM_PIN ""
+
+
+/**
+TIM:
+  APN: tim.br
+  login: tim
+  password: tim
+
+OI:
+  APN: gprs.oi.com.br
+  login:
+  password:
+
+CLARO:
+  APN: java.claro.com.br
+  login: claro
+  password: claro
+
+CORREIOS: nao 
+  APN: internet.br
+  login:
+  password:
+*/
+
 
 // ============================================================================
 //  Setup
@@ -178,13 +201,38 @@ void setup_a7608() {
 
     // Unlock your SIM card with a PIN if needed
     /*if (GSM_PIN && modem.getSimStatus() != 3) {
+        Serial.println("unlocking the chip");
         modem.simUnlock(GSM_PIN);
+        delay(250);
     }*/
+
+    const int simStatus = modem.getSimStatus();
+    switch (simStatus) {
+        case 0:
+            Serial.println("SIM Not Inserted/Not Responding");
+            break;
+        case 1:
+            Serial.println("SIM PIN Required");
+            break;
+        case 2:
+            Serial.println("SIM PUK Required");
+            break;
+        case 3:
+            Serial.println("SIM Ready");
+            break;
+        default:
+            Serial.println("Unknown SIM Status");
+            break;
+    }
 }
 
 void setup() {
+    // Set to 80MHz (options: RTC_CPU_FREQ_240M, RTC_CPU_FREQ_160M, RTC_CPU_FREQ_80M)
+    // rtc_clk_cpu_freq_set(RTC_XTAL_FREQ_40M);
     Serial.begin(115200);
     setup_a7608();
+
+    loop_verify_and_connect_4G();
 
     // Ativa o pino da Bateria como Input
     // pinMode(BOARD_BAT_ADC_PIN, INPUT);
@@ -231,11 +279,6 @@ int8_t loop_get_gnss(float& lat, float& lon) {
 
 */
 int8_t loop_send_post(float lat, float lon, float vbat) {
-    if (!modem.isNetworkConnected()) {
-        SerialMon.println("Network disconnected");
-        return ERROR;
-    }
-
     // Prepara a mensagem JSON
     char json_data[1024];
     snprintf(json_data, sizeof(json_data)-1, 
@@ -292,8 +335,8 @@ int8_t loop_verify_and_connect_4G() {
     }
 
     // Conecta na rede 4G
-    modem.gprsConnect(apn, gprsUser, gprsPass);
     SerialMon.println("Waiting for network...");
+    modem.gprsConnect(apn, gprsUser, gprsPass);
     if (!modem.waitForNetwork()) {
         SerialMon.println(" fail");
         return ERROR;
@@ -338,8 +381,9 @@ int8_t loop_verify_and_connect_4G() {
 
 
 void loop() {
-    const int32_t sleep_seconds = 10;
-    const int8_t res1 = loop_verify_and_connect_4G();
+    SerialMon.println("loop");
+    const int32_t sleep_seconds = 1;
+    const int8_t res1 = OK; //loop_verify_and_connect_4G();
     const float vbat1 = -1.0;
 
     // Execucao normal
@@ -349,17 +393,26 @@ void loop() {
         static float lon = 0.0;
         if ( loop_get_gnss(lat, lon) == OK ) {
             // Envia os dados para o servidor
+            loop_verify_and_connect_4G();
             loop_send_post(lat, lon, vbat1);
         } else {
+            SerialMon.println(F("Sem sinal do GPS"));
             cont += 1;
-            if ( cont > 5 ) {
+            if ( cont > 30 ) {
+                lat = 0.0;
+                lon = 0.0;
                 loop_send_post(lat, lon, vbat1);
                 cont = 0;
             }
         }
 
+    } else {
+        // Erro na conexao com o 4G, espera 30 segundos a mais
+        SerialMon.println(F("Esperando pois 4g nao conectou"));
+        delay(30*1000);    
     }
 
     // espera 10 segundos
+    SerialMon.println(F("Esperando..."));
     delay(sleep_seconds*1000);    
 }

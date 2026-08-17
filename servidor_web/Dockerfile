@@ -8,7 +8,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y libpq-dev gcc && apt-get clean
 
 # Copy the necessary files and directories into the container
-COPY main_server.py requirements.txt wsgi.py  /app/
+# COPY main_server.py requirements.txt wsgi.py /app/
+COPY main_server.py requirements.txt wsgi.py host.cert host.key /app/
 COPY templates/*  /app/templates/
 
 # Upgrade pip and install Python dependencies
@@ -18,5 +19,5 @@ RUN pip3 install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 EXPOSE 5000
 
 # Execute command: gunicorn wsgi -b 0.0.0.0:5000
-CMD ["gunicorn", "wsgi", "-b", "0.0.0.0:5000", "-w", "4"]
+CMD ["gunicorn", "wsgi", "--certfile=host.cert", "--keyfile=host.key","-b", "0.0.0.0:5000", "-w", "4"]
 

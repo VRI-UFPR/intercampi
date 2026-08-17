@@ -23,7 +23,6 @@ import threading
 import time
 import json
 import jinja2
-import psycopg2
 
 from flask import Flask, request
 from flask_cors import CORS
@@ -45,13 +44,23 @@ class Database:
     def __init__(self):
         self.dados = {}
 
-    def salva_coordenadas(self, rota, veiculo, latitude, longitude):
+    def salva_coordenadas(self, rota, veiculo, latitude, longetude):       
         timestamp = datetime.now().timestamp()
-        self.dados[rota] = {'rota': rota, 'veiculo': veiculo, 'latitude': 
-                            latitude, 'longitude': longitude, 'vbat': 0, 
-                            'timestamp': timestamp}
 
-    def onibus(self, onibus_id):
+        # cria e guarda em um dicionario global
+        item = {'nome': rota, 'veiculo': veiculo}
+        item['coordenadas'] = (latitude, longetude)
+        item['timestamp'] = str(timestamp)
+        item['vbat'] = 0
+        self.dados[rota] = item
+        
+        # salva os dados em um arquivo
+        item_json = json.dumps(item)
+        fd = open(f"./database/{rota}", "w")
+        fd.write(item_json)
+        fd.close()
+
+    def onibus(self, rota):
         """
             Retorna um dicionario com os dados de um onibus especifico com 
             sua ultima posição de GPS registrada.
@@ -59,37 +68,14 @@ class Database:
             {'rota': %s, 'veiculo': %s, 'coordenadas': (latidude, longetude), vbat: %f, 'timestamp': %s}
         """
 
-        if onibus_id in self.dados:
-            return self.dados[onibus_id]
-        
-        return {'rota': '', 'veiculo': '', 'latitude': 0, 'longitude': 0, 'vbat': 0, 'timestamp': 0}
+        if rota in self.dados:
+            resultado = self.dados[rota]
+        else:
+            resultado = {'nome': '', 'veiculo': '', 'latitude': 0, 'longitude': 0, 'vbat': 0, 'timestamp': 0}
+        return resultado
 
     def todos_onibus(self):
-        # Executa o SQL
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT rota,veiculo,latitude,longitude,vbat,timestamp FROM coordenadas
-                WHERE (rota, timestamp) IN 
-                    (SELECT rota, MAX(timestamp) FROM coordenadas GROUP BY rota);
-        """)
-        
-        # Prepara uma lista de dicionarios
-        rows = cursor.fetchall()
-        result = []
-
-        for row in rows:
-            val = {
-                'rota': row[0], 
-                'veiculo': row[1], 
-                'coordenadas': (row[2],row[3]),
-                'vbat': row[4],
-                'timestamp': row[5].strftime("%Y-%m-%d %H:%M:%S")
-            }
-            result.append(val)
-
-        # Retorna o resultado
-        return result
+        return self.dados.values()
 
 
 G_DB = Database()
@@ -154,8 +140,8 @@ def post_api():
         rota = data["rota"]
         veiculo = data["veiculo"]
         latitude = data["lat"]
-        longitude = data["log"]
-        G_DB.salva_coordenadas(rota,veiculo,latitude,longitude)
+        longetude = data["log"]
+        G_DB.salva_coordenadas(rota,veiculo,latitude,longetude)
         return json.dumps({'status': 'ok'})
     except Exception as error:
         return json.dumps({'status': 'error', 'message': str(error)})
